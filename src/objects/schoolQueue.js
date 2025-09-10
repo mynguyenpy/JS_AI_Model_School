@@ -7,10 +7,14 @@ export default class SchoolQueue {
     input array data convert them into "School" object and store them in "queue"
   */
   AddSchool(data) {
-    data.forEach(dta => {
+    // const _sch = new School(dta);
+    const _sch = new School(data);
+    this.queue.push(_sch);
+
+    /* data.forEach(dta => {
       const _sch = new School(dta);
       this.queue.push(_sch);
-    });
+    }); */
   }
 
   /* 
