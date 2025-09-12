@@ -21,7 +21,7 @@ export default class SchoolDB_Client {
   async getDBSchool() {
     const query = `
       SELECT 
-        "校系代碼" as ID,
+        "校系代碼" as id,
         "學校" as name,
         "正備取有效性" as posvalid
       FROM public."Data_111"
