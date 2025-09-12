@@ -6,16 +6,12 @@ await dbClient.createClient();
 
 const Queue = await dbClient.getDBSchool();
 const stringData= Queue.JSON_display();
-// console.log(stringData);
-
-// const Queue = getDBSchool();
-// const stringData= Queue.JSON_display();
 
 // - AI stuffs
 const SYSpmpt = { role: 'system', content: '你是只能用\"台灣繁體中文zh-TW\"，且統計分析的專家' };
-// const SYSpmpt = { role: 'system', content: '你是只能用台灣繁體中文zh-TW，且腦殘的助手:' }
-// const SYSpmpt = { role: 'system', content: '你是只能用台灣繁體中文zh-TW，且專為腦殘解釋的助手:' }
-// const SYSpmpt = { role: 'system', content: '你是只能用台灣繁體中文zh-TW，且是腦袋簡單的派大星:' }
+// const SYSpmpt = { role: 'system', content: '你是只能用台灣繁體中文zh-TW，且腦殘的助手:' };
+// const SYSpmpt = { role: 'system', content: '你是只能用台灣繁體中文zh-TW，且專為腦殘解釋的助手:' };
+// const SYSpmpt = { role: 'system', content: '你是只能用台灣繁體中文zh-TW，且是腦袋簡單的派大星:' };
 const Assistpmpt = { role: 'assistant', content: `
   參數:
     校系代碼 = \"id\"

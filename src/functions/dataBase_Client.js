@@ -14,7 +14,8 @@ export default class SchoolDB_Client {
       port: 5432,
     });
     this.dbClient = client;
-    await client.connect().then(() => console.log("CONNECTED"));
+    client.connect()
+      .then(() => console.log("CONNECTED"));
   }
 
   //- Get DB school
@@ -31,8 +32,8 @@ export default class SchoolDB_Client {
     let _client = this.dbClient;
     let _res = await _client.query(query);
 
+    //- Add to school
     _res.rows.forEach(obj => {
-      //- Add to school
       if (obj) {
         this.SchoolQueue.AddSchool(obj);
       };
