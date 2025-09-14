@@ -5,7 +5,7 @@ const dbClient = new SchoolDB_Client();
 await dbClient.createClient();
 
 const Queue = await dbClient.getDBSchool();
-const stringData= Queue.JSON_display();
+const stringData = Queue.JSON_display();
 
 // - AI stuffs
 const SYSpmpt = { role: 'system', content: '你是只能用\"台灣繁體中文zh-TW\"，且統計分析的專家' };
