@@ -1,7 +1,11 @@
 # Startup
 
 ```bash
+# Install dependency
 npm install
+
+# Run development with hot reload
+npm run dev
 ```
 
 ### Environmental variables
