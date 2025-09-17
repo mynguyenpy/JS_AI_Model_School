@@ -1,32 +1,33 @@
-import Express from 'express'
 import 'dotenv/config'
+import Express from 'express'
+import path from 'path';
+
 import { QueryChat } from './functions/ollamaQuery.js'
 import SchoolDB_Client from './functions/dataBase_Client.js'
 
+// const __dirname = path.dirname(__filename);
+const __dirname = process.cwd() + '/src/views';
+
 const app = Express();
+
+app.use(Express.static(path.join(__dirname, 'public')));
 
 //- set views
 app.set('view engine', process.env.VIEW_ENGINE);
 app.set('views', process.cwd() + '/src/views');
 
 app.get('/', async (req,res) => {
-  const dbClient = new SchoolDB_Client();
+  /* const dbClient = new SchoolDB_Client();
   await dbClient.createClient();
 
   const Queue = await dbClient.getDBSchool();
   const stringData = Queue.JSON_display();
   
   let chat_Res = await QueryChat(stringData);
-  res.render('index', {chat: chat_Res.message.content});
-  // res.send(chat_Res.message.content);
+  res.render('index', {chat: chat_Res.message.content}); */
 
-  /* for await (const part of chat_Res) {
-    // process.stdout.write(part.message.content);
-    res.send(part.message.content);
-  }; */
-  
-  // res.sendStatus(500);
-  // res.json(Queue);
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+
 });
 
 //- Env port

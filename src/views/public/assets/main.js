@@ -6,6 +6,7 @@ let originalUniversityData = {};
 let currentYear = '111'; // 預設年份
 let currentDisplayMode = 'group'; // 預設顯示模式：系組
 Chart.register(ChartDataLabels);
+
 // DOM 元素
 const searchBox = document.querySelector('.search-box');
 const universityList = document.getElementById('universityList');
