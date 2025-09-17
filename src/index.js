@@ -13,7 +13,7 @@ const showdownCt = new showdown.Converter(); //- MD convertor
 const app = Express();
 
 app.use('/api',API_router);
-// app.use(Express.static(path.join(__dirname, 'public')));
+// app.use(Express.static(path.join(__dirname, 'public'))); // 👈#NOTE : 這會把 html 改成固定的
 
 //- set views
 app.set('view engine', process.env.VIEW_ENGINE);
