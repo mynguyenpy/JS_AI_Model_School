@@ -2,6 +2,7 @@ import 'dotenv/config'
 import Express from 'express'
 import path from 'path';
 
+import API_router from './functions/API_Routes.js'
 import { QueryChat } from './functions/ollamaQuery.js'
 import SchoolDB_Client from './functions/dataBase_Client.js'
 
@@ -10,6 +11,7 @@ const __dirname = process.cwd() + '/src/views';
 
 const app = Express();
 
+app.use('/api',API_router);
 app.use(Express.static(path.join(__dirname, 'public')));
 
 //- set views
