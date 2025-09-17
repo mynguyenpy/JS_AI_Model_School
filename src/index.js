@@ -4,7 +4,7 @@ import path from 'path';
 
 import API_router from './functions/API_Routes.js'
 import { QueryChat } from './functions/ollamaQuery.js'
-import SchoolDB_Client from './functions/dataBase_Client.js'
+import { SchoolDB_Client } from './functions/dataBase_Client.js'
 
 // const __dirname = path.dirname(__filename);
 const __dirname = process.cwd() + '/src/views';

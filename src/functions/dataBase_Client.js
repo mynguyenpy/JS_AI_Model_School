@@ -1,22 +1,31 @@
 import { Client } from 'pg';
 import SchoolQueue from '../objects/schoolQueue.js'
 
-export default class SchoolDB_Client {
-  dbClient = null;
-  SchoolQueue = new SchoolQueue();
+//- Make sure DB is connected
+let dbClient = null;
+if (!dbClient) {
+  console.log("Connecting Database...");
 
-  async createClient() {
-    const client = new Client({
-      host : 'localhost',
-      user: 'postgres',
-      password: process.env.DB_PW,
-      database: 'School_Test',
-      port: 5432,
+  dbClient = new Client({
+    host : 'localhost',
+    user: 'postgres',
+    password: process.env.DB_PW,
+    database: 'School_Test',
+    port: 5432,
+  });
+  dbClient.connect()
+    .then(() => console.log("\x1b[42mDatabase Connected.\x1b[0m"))
+    .catch(e => { //- The error is "AggregateError"
+      console.log(`\x1b[41mCannot connect to Database !!\x1b[0m`);
+      e.errors.forEach(x =>{
+        console.error(`Database Error - \"\x1b[31m${x.message}\x1b[0m\"`);
+      });
     });
-    this.dbClient = client;
-    client.connect()
-      .then(() => console.log("CONNECTED"));
-  }
+}
+
+export default dbClient;
+export class SchoolDB_Client {
+  SchoolQueue = new SchoolQueue();
 
   //- Get DB school
   async getDBSchool() {
@@ -29,8 +38,7 @@ export default class SchoolDB_Client {
       where "正備取有效性" != 0
       LIMIT 50
     `;
-    let _client = this.dbClient;
-    let _res = await _client.query(query);
+    let _res = await dbClient.query(query);
 
     //- Add to school
     _res.rows.forEach(obj => {
