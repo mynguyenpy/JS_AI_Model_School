@@ -23,30 +23,41 @@ if (!dbClient) {
     });
 }
 
+function getPrompt(year = '0', post = '') {
+  return `
+    SELECT 
+      "校系代碼" as id,
+      "學校" as name,
+      "正備取有效性" as posvalid
+    FROM public."Data_${year}"
+    where "正備取有效性" != 0 ${post}
+  `;
+}
+
 export default dbClient;
 export class SchoolDB_Client {
   SchoolQueue = new SchoolQueue();
 
+  
   //- Get DB school
-  async getDBSchool() {
-    const query = `
-      SELECT 
-        "校系代碼" as id,
-        "學校" as name,
-        "正備取有效性" as posvalid
-      FROM public."Data_111"
-      where "正備取有效性" != 0
-      LIMIT 50
-    `;
-    let _res = await dbClient.query(query);
+  getAnalyzeSchools(year = '') {
+    const query = getPrompt(year, 'LIMIT 50');
 
-    //- Add to school
-    _res.rows.forEach(obj => {
-      if (obj) {
-        this.SchoolQueue.AddSchool(obj);
-      };
-    });
-
-    return this.SchoolQueue;
+    return new Promise((resolve, reject) => {
+      dbClient.query(query)
+        .then(_res => {
+          //- Add to school
+          _res.rows.forEach(obj => {
+            if (obj) {
+              this.SchoolQueue.AddSchool(obj);
+            };
+            resolve(this.SchoolQueue);
+          });
+        })
+        .catch(err => {
+          console.error(err.message);
+        });
+    })
+    
   }
 }

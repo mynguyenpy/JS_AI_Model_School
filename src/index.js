@@ -9,27 +9,27 @@ import { SchoolDB_Client } from './functions/dataBase_Client.js'
 
 const __dirname = process.cwd() + '/src/views';
 
-const showdownCt = new showdown.Converter(); //- MD convertor
 const app = Express();
 
 app.use('/api',API_router);
-// app.use(Express.static(path.join(__dirname, 'public'))); // 👈#NOTE : 這會把 html 改成固定的
+app.use(Express.static(path.join(__dirname, 'public'))); // 👈#NOTE : 這會把 html 改成固定的
 
 //- set views
 app.set('view engine', process.env.VIEW_ENGINE);
 app.set('views', __dirname);
 
-app.get('/', async (req,res) => {
+/* app.get('/', async (req,res) => {
   const dbClient = new SchoolDB_Client();
 
-  const Queue = await dbClient.getDBSchool();
+  const Queue = await dbClient.getAnalyzeSchools();
   const stringData = Queue.JSON_display();
   
-  let chat_Res = await QueryChat(stringData);
+  let chat_Res = await QueryChat(stringData, `哪間學校為最受歡迎`);
+  chat_Res = showdownCt.makeHtml(chat_Res.message.content);
   res.render('index', {
-    chat: showdownCt.makeHtml(chat_Res.message.content)
+    chat: chat_Res
   });
-});
+}); */
 
 //- Env port
 const port = parseInt(process.env.PORT || '3000');
