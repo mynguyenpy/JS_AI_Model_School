@@ -26,9 +26,9 @@ if (!dbClient) {
 
   try {
     dbClient = await pool.connect()
-    console.log("\x1b[42mDatabase Connected.\x1b[0m");
+    console.log("\x1b[42mDatabase Connected.\x1b[0m \n");
   } catch (errors) { //- The error is "AggregateError"
-    console.log(`\x1b[41mCannot connect to Database !!\x1b[0m`);
+    console.log(`\x1b[41mCannot connect to Database !!\x1b[0m \n`);
     e.errors.forEach(x =>{
       console.error(`Database Error - \"\x1b[31m${x.message}\x1b[0m\"`);
     });
@@ -85,17 +85,20 @@ export class dataBase_methods {
       ) AS existence;
     `;
 
-    console.log(`📄\x1b[33m- Checking ${year} Tables.\x1b[0m`);
+    console.log(`📄 \x1b[33m- Checking ${year} Tables.\x1b[0m`);
+
     //- Check table exist
     try {
       let res = await dbClient.query(query);
       if (!res.rows[0]['existence']) {
-        Promise.all([
+        await Promise.all([
           QueryView(year)
-        ]).then();
+        ]);
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      console.log(`\x1b[32m✅ - All \"${year}\" VIEW Tables has been checked !!\x1b[0m \n`);
     }
   }
   
