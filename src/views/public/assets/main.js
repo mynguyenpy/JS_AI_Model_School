@@ -65,9 +65,9 @@ function parseSchoolData(schoolData) {
         categories: [],
       };
       curDepartment = curData.departments[deptcode];
+      curDepartment.categories.push(category);
     }
 
-    curDepartment.categories.push(category);
 	}
 
 	return data;
@@ -518,6 +518,7 @@ function updateSelectedDepartment(departmentElement) {
         });
         
 				drawLineChart("chart-line-1", nodes, "一階通過率", "firststagepassrate");
+				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
 				drawLineChart("chart-line-3", nodes, "正備取有效性", "admissionvalidity");
 				drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
 				renderNetwork(nodes,edges);
@@ -525,13 +526,6 @@ function updateSelectedDepartment(departmentElement) {
       .catch((err) => {
 				console.error(`載入關係圖失敗:`, err);
 			});
-		
-		/* fetch(`/data/data_${code}_${currentYear}.json`)
-			.then((res) => res.json())
-			.then((data) => {
-        console.log(data);
-				// drawDualAxisLineChart("chart-line-2", data, "R值", "登分平均分數");
-			}); */
 
 
 		selectedTitle.textContent = `${school.name} - ${dept.name}`;
@@ -810,10 +804,10 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 		},
 	});
 }
-function drawDualAxisLineChart(containerId, data, rKey = "", avgKey = "") {
-	const labels = data.map((d) => d["111年虎科資管(資電類)"].split("/")[1]);
-	const rValues = data.map((d) => d[rKey]);
-	const avgValues = data.map((d) => d[avgKey]);
+function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
+  const labels = nodes.map(d => dataParser(d,['schoolname', 'deptname']));
+	const rValues = nodes.map((d) => parseFloat(localizeDept(d, [rKey])));
+	const avgValues = nodes.map((d) => parseFloat(localizeDept(d, [avgKey])));
 
 	safeDraw(containerId, {
 		type: "line",

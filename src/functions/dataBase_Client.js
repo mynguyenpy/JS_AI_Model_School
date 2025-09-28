@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import SchoolQueue from '../objects/schoolQueue.js'
-import { QueryView } from './DB/createDBViews.js'
+import { QueryViews } from './DB/createDBViews.js'
 
 //- Make sure DB is connected
 console.log("Connecting Database...");
@@ -77,33 +77,38 @@ export class SchoolDB_Client {
 export class dataBase_methods {
 
   static async initDatabase(year = 111) {
-    const query = `
-      SELECT EXISTS (
-        SELECT 1
+    const query = {
+      text : `
+        SELECT 
+          cast (COUNT (*) AS Integer)
         FROM information_schema.views
-        WHERE table_name = 'QUERY_111'
-      ) AS existence;
-    `;
+        WHERE table_name LIKE 'QUERY_%'
+      `,
+      rowMode: 'array',
+  };
 
     console.log(`📄 \x1b[33m- Checking ${year} Tables.\x1b[0m`);
 
     //- Check table exist
+    const total_Should_Exist = 1;
+
     try {
       let res = await dbClient.query(query);
-      if (!res.rows[0]['existence']) {
+
+      if (total_Should_Exist != res.rows[0]) {
         await Promise.all([
-          QueryView(year)
+          QueryViews(year)
         ]);
-      }
+      };
     } catch (err) {
       console.error(err);
     } finally {
-      console.log(`\x1b[32m✅ - All \"${year}\" VIEW Tables has been checked !!\x1b[0m \n`);
+      console.log(`\x1b[32m✅ - All \"${year}\" VIEW Tables has been checked !!\x1b[0m \n`)
     }
   }
   
   /* 
-    Query from view tables for better speed
+    Query from view tables for better performance
   */
   static async getAllSchool(year_Int = -1) {
     const query = `
@@ -113,7 +118,20 @@ export class dataBase_methods {
     
     try {
       let res = await dbClient.query(query);
-
+      return res.rows;
+    } catch (err) {
+      console.error(err.message);
+    }
+  }
+  //- 登記分發資料
+  static async getAllSchool_Distr(year_Int = -1) {
+    const query = `
+      SELECT *
+      FROM public."QUERY_Distr_${year_Int}"
+    `;
+    
+    try {
+      let res = await dbClient.query(query);
       return res.rows;
     } catch (err) {
       console.error(err.message);

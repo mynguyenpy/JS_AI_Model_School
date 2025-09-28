@@ -22,7 +22,6 @@ API_router.get('/getAllSchool', async (req, res) => {
 
   try {
     //- Responses
-    // let _res = await dbClient.query(query);
     let _res = await dataBase_methods.getAllSchool(year_Int);
     res.status(200).json(_res);
   } catch (err) {
