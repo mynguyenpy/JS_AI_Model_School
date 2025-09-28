@@ -10,7 +10,7 @@ import ollama from 'ollama'
       "posvalid"
     }
 */
-export async function QueryChat(stringData) {
+export async function QueryChat(stringData, userPrmpt = ``) {
   // - AI stuffs
     const SYSpmpt = { role: 'system', content: '你是只能用\"台灣繁體中文zh-TW\"，且統計分析的專家' };
     // const SYSpmpt = { role: 'system', content: '你是只能用台灣繁體中文zh-TW，且腦殘的助手:' };
@@ -28,7 +28,7 @@ export async function QueryChat(stringData) {
       分析資料:
         \"${stringData}\"
     ` };
-    const message = { role: 'user', content: `哪間學校為最受歡迎` };
+    const message = { role: 'user', content: userPrmpt };
     
   const response = await ollama.chat({
     model: 'gemma2',

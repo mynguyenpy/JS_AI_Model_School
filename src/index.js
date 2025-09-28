@@ -1,33 +1,24 @@
-import Express from 'express'
 import 'dotenv/config'
-import { QueryChat } from './functions/ollamaQuery.js'
-import SchoolDB_Client from './functions/dataBase_Client.js'
+import Express from 'express'
+import path from 'path'
+
+import API_router from './functions/API_Routes.js'
+import { dataBase_methods } from './functions/dataBase_Client.js'
+
+//- TEST
+await dataBase_methods.initDatabase();
+//- ------ -//
+
+const __dirname = process.cwd() + '/src/views';
 
 const app = Express();
 
+app.use('/api',API_router);
+app.use(Express.static(path.join(__dirname, 'public'))); // 👈#NOTE : 這會把 html 改成固定的
+
 //- set views
 app.set('view engine', process.env.VIEW_ENGINE);
-app.set('views', process.cwd() + '/src/views');
-
-app.get('/', async (req,res) => {
-  const dbClient = new SchoolDB_Client();
-  await dbClient.createClient();
-
-  const Queue = await dbClient.getDBSchool();
-  const stringData = Queue.JSON_display();
-  
-  let chat_Res = await QueryChat(stringData);
-  res.render('index', {chat: chat_Res.message.content});
-  // res.send(chat_Res.message.content);
-
-  /* for await (const part of chat_Res) {
-    // process.stdout.write(part.message.content);
-    res.send(part.message.content);
-  }; */
-  
-  // res.sendStatus(500);
-  // res.json(Queue);
-});
+app.set('views', __dirname);
 
 //- Env port
 const port = parseInt(process.env.PORT || '3000');

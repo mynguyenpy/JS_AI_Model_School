@@ -12,11 +12,15 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "chart.js": "^4.5.0",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "dotenv": "^17.2.2",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "ollama": "^0.5.17",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "showdown": "^2.1.0",
+    "ts-trueskill": "^5.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
