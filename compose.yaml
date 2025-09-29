@@ -20,9 +20,9 @@ services:
     volumes:
       - analyze-data:/var/lib/university_analyze
     ports:
-      - 3000:9000 # To <- FROM
+      - 3000:3000 # To <- FROM
     expose:
-      - 9000
+      - 3000
   db-connect:
     image: postgres:latest
     restart: always
@@ -34,9 +34,9 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     ports:
-      - 5432:5442
+      - 5442:5432
     expose:
-      - 5442
+      - 5432
 
 # Use for remote DB admin
   adminer:
