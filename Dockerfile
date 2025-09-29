@@ -18,7 +18,7 @@ ENV NODE_ENV=production \
 		SERVER_NAME="Nigga Server" \
 		PORT=9000
 
-
+VOLUME /var/lib/university_analyze
 WORKDIR /usr/src/app
 
 COPY package*.json ./

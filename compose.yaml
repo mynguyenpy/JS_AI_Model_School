@@ -17,6 +17,8 @@ services:
       DB_PW: pw
       DB_PORT: 5432
       PORT: 3000
+    volumes:
+      - analyze-data:/var/lib/university_analyze
     ports:
       - 3000:9000 # To <- FROM
     expose:
@@ -29,6 +31,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: pw
       POSTGRES_DB: School_Test
+    volumes:
+      - db-data:/var/lib/postgresql/data
     ports:
       - 5432:5442
     expose:
@@ -41,6 +45,8 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@nfu.edu.tw
       PGADMIN_DEFAULT_PASSWORD: pw
     restart: always
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
     configs:
       - source: servers.json
         target: /pgadmin4/servers.json
@@ -48,7 +54,11 @@ services:
         target: /pgpass
     ports:
       - 5050:80
-
+volumes:
+  analyze-data:
+  db-data:
+  pgadmin-data:
+  
 configs:
   pgpass:
     content: db-connect:5432:*:postgres:postgres
