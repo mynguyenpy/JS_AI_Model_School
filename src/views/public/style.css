@@ -488,6 +488,8 @@ body::before {
 
 .image-container.large {
     height: 320px;
+    display: grid;
+    grid-template-columns: 20% 80%;
     grid-column: 1 / -1;
 }
 
@@ -594,7 +596,8 @@ body::before {
 
 .input-area {
     width: 100%;
-    height: 140px;
+    min-height: 140px;
+    height: auto;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 16px;
     padding: 20px;
