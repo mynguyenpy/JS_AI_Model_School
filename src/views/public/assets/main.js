@@ -511,12 +511,7 @@ function updateSelectedDepartment(departmentElement) {
 					}
 				});
 
-				drawLineChart(
-					"chart-line-1",
-					nodes,
-					"一階通過率",
-					"firststagepassrate"
-				);
+				drawLineChart("chart-line-1", nodes, "統測甄選錄取率", "admissonrate");
 				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
 				drawLineChart(
 					"chart-line-3",
