@@ -1,0 +1,25 @@
+name: Deployment
+
+on: 
+  push
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+  
+    steps:
+    - name: Setup Tailscale
+      uses: tailscale/github-action@v3
+      with:
+        hostname: Github-actions
+        oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+        oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+        tags: tag:ci
+
+    - name: Start Deployment
+      uses: FarisZR/tailscale-ssh-deploy@v1
+      with:
+        remote_host: root@school-server
+        directory: generated
+        remote_destination: C:/code
+        post_upload_command: echo thats it
