@@ -16,10 +16,9 @@ jobs:
         oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
         tags: tag:ci
 
-    - name: Start Deployment
-      uses: FarisZR/tailscale-ssh-deploy@v1
-      with:
-        remote_host: root@school-server
-        directory: generated
-        remote_destination: C:/code
-        post_upload_command: echo thats it
+    - name: Do the deploy thing
+      run: |
+        ssh -o "StrictHostKeyChecking no" root@school-server "
+          docker compose pull
+          docker compose up --build -d
+        "
