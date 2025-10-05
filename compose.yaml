@@ -12,13 +12,17 @@ services:
     build:
       context: .
     environment:
-      NODE_ENV: production
-      DB_IP: db-connect
-      DB_PW: pw
-      DB_PORT: 5432
-      PORT: 9000
+      - OLLAMA_HOST_URL: http://ollama:11434
+      - OLLAMA_MODEL: gemma3
+      - DB_IP: school-server
+      - DB_PW: pw
+      - DB_PORT: 5442
+      - PORT: 3000
     volumes:
       - analyze-data:/var/lib/university_analyze
+    depends_on:
+      - ollama
+      - db-connect
     ports:
       - 3000:9000 # To <- FROM
     expose:
@@ -37,6 +41,24 @@ services:
       - 5442:5432
     expose:
       - 5432
+  ollama:
+    volumes:
+      - ollama-data:/root/.ollama
+    container_name: ollama
+    tty: true
+    restart: unless-stopped
+    image: docker.io/ollama/ollama:latest
+    ports:
+      - 11434:11434
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all 
+              capabilities: [gpu]
 
 # Use for remote DB admin
   adminer:
@@ -54,8 +76,11 @@ services:
         target: /pgpass
     ports:
       - 5050:80
+
+# Volumes
 volumes:
   analyze-data:
+  ollama-data:
   db-data:
   pgadmin-data:
   
