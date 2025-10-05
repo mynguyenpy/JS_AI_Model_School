@@ -2,7 +2,9 @@ name: Deployment
 
 on: 
   workflow_dispatch:
-  release:
+  push:
+    tags:
+      - 'v*.*.*' # Trigger on new Git tags like v1.0.0
 
 jobs:
   build-and-test:
@@ -27,13 +29,29 @@ jobs:
         uses: ASzc/change-string-case-action@v6
         with:
           string: ${{ github.repository }}
+      - 
+        name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          flavor: |
+            latest=false
+          # list of Docker images to use as base name for tags
+          images: |
+            ${{ steps.string.outputs.lowercase }}
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
       -
         name: Build and push
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: ${{ steps.string.outputs.lowercase }}
-          labels: ${{github.ref_name}}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           secrets: |
               GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN  }}
       
