@@ -7,6 +7,9 @@
 # Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
 
 ARG NODE_VERSION=22.19.0
+ARG GIT_VERSION_TAG=unspecified
+ARG GIT_COMMIT_MESSAGE=unspecified
+ARG GIT_VERSION_HASH=unspecified
 
 FROM node:${NODE_VERSION}-alpine
 
@@ -24,6 +27,11 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 RUN npm install
+
+# Read files for the information in your application
+RUN echo $GIT_VERSION_TAG > GIT_VERSION_TAG.txt
+RUN echo $GIT_COMMIT_MESSAGE > GIT_COMMIT_MESSAGE.txt
+RUN echo $GIT_VERSION_HASH > GIT_VERSION_HASH.txt
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.npm to speed up subsequent builds.
