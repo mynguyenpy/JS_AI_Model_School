@@ -15,10 +15,11 @@ FROM node:${NODE_VERSION}-alpine
 
 # Use production node environment by default.
 ENV NODE_ENV=production \
-		VIEW_ENGINE=ejs \
-		DB_PW=example \
-		DB_PORT=5433 \
-		SERVER_NAME="Nigga Server" \
+		OLLAMA_HOST_URL=http://ollama:11434 \
+		OLLAMA_MODEL=gemma3 \
+		DB_IP=DB_IP \
+		DB_PW=password \
+		DB_PORT=5432 \
 		PORT=9000
 
 VOLUME /var/lib/university_analyze
