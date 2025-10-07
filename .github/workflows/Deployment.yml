@@ -59,12 +59,13 @@ jobs:
       #       GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN  }}
       - 
         name: Setup Tailscale
-        uses: tailscale/github-action@v2
+        uses: tailscale/github-action@v3
         with:
           hostname: Github-actions
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
+          targets: root@${{secrets.SSH_HOST}}
       - 
         name: Deploy to Staging server
         uses: marcodallasanta/ssh-scp-deploy@v1.2.0
@@ -72,7 +73,7 @@ jobs:
           local: 'compose.yaml'                                                  # Local file path - REQUIRED false - DEFAULT ./
           remote: ${{secrets.REMOTE_DIRECTORY}}                                                 # Remote file path - REQUIRED false - DEFAULT ~/
           host: ${{secrets.SSH_HOST}}                                      # Remote server address - REQUIRED true
-          user: ${{secrets.SSH_USER}}                                      # Remote server user - REQUIRED true
+          user: root                                      # Remote server user - REQUIRED true
           key: ${{secrets.SSH_PRIVATE_KEY}}                                        # Remote server private key - REQUIRED at least one of "password" or "key" 
           # pre_upload: echo "This will be executed before the upload!"  # Command to run via ssh before scp upload - REQUIRED false
           # post_upload: Remove-Item -Path '${{secrets.REMOTE_DIRECTORY }}/compose.yaml'  # Command to run via ssh after scp upload - REQUIRED false
