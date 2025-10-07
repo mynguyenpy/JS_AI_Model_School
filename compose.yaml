@@ -9,8 +9,8 @@
 # https://github.com/docker/awesome-compose
 services:
   back-end:
-    build:
-      context: .
+    image: aaren882/js_ai_model_schoo
+    container_name: server
     environment:
       - OLLAMA_HOST_URL: http://ollama:11434
       - OLLAMA_MODEL: gemma3
@@ -29,6 +29,7 @@ services:
       - 9000
   db-connect:
     image: postgres:latest
+    container_name: pg
     restart: always
     shm_size: 128mb
     environment:
