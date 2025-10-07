@@ -12,12 +12,12 @@ services:
     image: aaren882/js_ai_model_schoo
     container_name: server
     environment:
-      - OLLAMA_HOST_URL: http://ollama:11434
-      - OLLAMA_MODEL: gemma3
-      - DB_IP: school-server
-      - DB_PW: pw
-      - DB_PORT: 5442
-      - PORT: 3000
+      OLLAMA_HOST_URL: http://ollama:11434
+      OLLAMA_MODEL: gemma3
+      DB_IP: db-connect
+      DB_PW: pw
+      DB_PORT: 5442
+      PORT: 3000
     volumes:
       - analyze-data:/var/lib/university_analyze
     depends_on:
