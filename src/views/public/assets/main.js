@@ -506,16 +506,22 @@ function updateSelectedDepartment(departmentElement) {
 				const { nodes, edges } = res;
 				console.log(res);
 
-				drawLineChart("chart-line-1", nodes, "統測甄選錄取率", "admissonrate");
-				drawDualAxisLineChart("chart-line-2", nodes, "R值", "avg");
+				drawLineChart(
+					"chart-line-1",
+					nodes,
+					"錄取率",
+					"admissonrate"
+				);
+				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
 				drawLineChart(
 					"chart-line-3",
 					nodes,
-					"正備取有效性",
+					"甄選名額留去登分比例",
 					"admissionvalidity"
 				);
-				drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
+				drawLineChart("chart-line-4", nodes, "甄選名額留去登分比例", "posvalid");
 				renderNetwork(nodes, edges);
+				iLB();
 			})
 			.catch((err) => {
 				console.error(`載入關係圖失敗:`, err);
@@ -628,7 +634,7 @@ function searchUniversitiesAndDepartments(searchTerm) {
 
 // 圖片容器點擊事件
 function initializeImageContainers() {
-	const imageContainers = document.querySelectorAll(".image-container");
+	const imageContainers = document.querySelectorAll(".image-container.large");
 	imageContainers.forEach((container) => {
 		container.addEventListener("mouseenter", function () {
 			this.style.cursor = "pointer";
@@ -795,7 +801,7 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 					formatter: function (value) {
 						return value.toFixed(2); // 小數點兩位
 					},
-					font: { size: 10 },
+					font: { size: 10},
 				},
 				title: { display: true, text: chartName },
 			},
@@ -863,5 +869,40 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 				},
 			},
 		},
+	});
+}
+function iLB(){
+		
+	const containers = document.querySelectorAll('.image-container.medium')
+	const lightbox = document.getElementById('lightbox')
+	const LBcontent = document.getElementById('lightbox-content')
+	const MC = document.querySelector('.main-content')
+	let ACTcontainer = null;
+	let nS = null;
+	const dummy =document.createElement('div');
+	containers.forEach(container => {
+		container.addEventListener('click',function(){
+			if(!ACTcontainer){
+			dummy.className='placeholder-image';
+			dummy.style.width=container.offsetWidth+'px';
+			dummy.style.height=container.offsetHeight+'px';
+			dummy.style.display='inline-block'
+			ACTcontainer = container;
+			nS = container.nextSibling;
+			container.parentNode.insertBefore(dummy,nS);
+			lightbox.style.display='block';
+			LBcontent.innerHTML='';
+			LBcontent.appendChild(container);
+			}
+		})
+	})
+	lightbox.addEventListener('click',function(e){
+		if(e.target == lightbox){
+			dummy.style.display='none';
+			MC.insertBefore(ACTcontainer,dummy);
+			lightbox.style.display='none';
+			LBcontent.innerHTML='';
+			ACTcontainer = null;
+		}
 	});
 }
