@@ -516,8 +516,8 @@ function updateSelectedDepartment(departmentElement) {
 				drawLineChart(
 					"chart-line-3",
 					nodes,
-					"甄選名額留去登分比例",
-					"admissionvalidity"
+					"甄選名額流去登分比例",
+					"shiftratio"
 				);
 				drawLineChart("chart-line-4", nodes, "甄選名額留去登分比例", "posvalid");
 				renderNetwork(nodes, edges);
