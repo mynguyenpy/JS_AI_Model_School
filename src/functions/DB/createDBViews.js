@@ -43,15 +43,24 @@ async function createDataView(year) {
           -1.000
         ELSE
           (
-          (
-            cast ("一般生招生名額" AS DOUBLE PRECISION) -
-            cast ("一般生名額空缺" AS DOUBLE PRECISION)
-          ) /
+            (
+              cast ("一般生招生名額" AS DOUBLE PRECISION) -
+              cast ("一般生名額空缺" AS DOUBLE PRECISION)
+            ) /
           cast ("一般生招生名額" AS DOUBLE PRECISION)
           )
         END
       ) AS AdmissonRate,
       r_score AS r_score,
+      (
+        CASE
+        WHEN "一般生招生名額" = 0 THEN 
+          -1.000
+        ELSE
+          cast ("一般生名額空缺" AS DOUBLE PRECISION) / 
+          cast ("一般生招生名額" AS DOUBLE PRECISION)
+        END
+      ) AS ShiftRatio,
       COALESCE(
         "Distr_${year}".錄取總分數 /
         (
@@ -88,7 +97,7 @@ async function createDataView(year) {
 	]);
 
 	//- #NOTE : Update R-score to DB
-	let result = query_data.rows
+	let R_scores = query_data.rows
 		.map((x) => {
 			const { deptcode } = x;
 			return `(${deptcode}, ${ts_data.R_score(deptcode)})`;
@@ -96,20 +105,43 @@ async function createDataView(year) {
 		.flat()
 		.join(",");
 
-	const insert = {
-		name: `insert-${year}_VIEW_Table`,
+	const insert_R = {
+		name: `insert_R_Score-${year}_VIEW_Table`,
 		text: `
       UPDATE public."Data_${year}"
         SET 
           r_score = new_data.score
         FROM (VALUES
-          ${result}
+          ${R_scores}
         )
         AS new_data(school_id, score)
         WHERE "校系代碼" = new_data.school_id;
     `,
 	};
-	await dbClient.query(insert);
+  const ShiftRatios = query_data.rows.map((x) => {
+      const { deptcode, shiftratio } = x;
+      return `(${deptcode}, ${shiftratio})`;
+    })
+    .join(",");
+
+  const insert_ShiftRatios = {
+		name: `insert_ShiftRatios-${year}_VIEW_Table`,
+		text: `
+      UPDATE public."Data_${year}"
+        SET 
+          甄選名額流去登分比例 = new_data.shiftratio
+        FROM (VALUES
+          ${ShiftRatios}
+        )
+        AS new_data(school_id, shiftratio)
+        WHERE "校系代碼" = new_data.school_id;
+    `,
+	};
+	await Promise.all(
+		[insert_R, insert_ShiftRatios].map((x) => {
+			dbClient.query(x)
+		})
+	);
 
 	//- create view table
 	await dbClient.query(create);

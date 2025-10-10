@@ -497,14 +497,12 @@ function updateSelectedDepartment(departmentElement) {
 			mode: "group",
 			fullText: `${school.name} - ${dept.name} (${currentYear}年)`,
 		};
-		const code = deptCode;
 
 		// 載入並繪製 network
 		fetch(`api/getRelationData?year=${currentYear}&id=${deptCode}`)
 			.then((res) => res.json())
 			.then((res) => {
 				const { nodes, edges } = res;
-				console.log(res);
 
 				drawLineChart(
 					"chart-line-1",
@@ -516,10 +514,10 @@ function updateSelectedDepartment(departmentElement) {
 				drawLineChart(
 					"chart-line-3",
 					nodes,
-					"甄選名額留去登分比例",
-					"admissionvalidity"
+					"甄選名額流去登分比例",
+					"shiftratio"
 				);
-				drawLineChart("chart-line-4", nodes, "甄選名額留去登分比例", "posvalid");
+				drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
 				renderNetwork(nodes, edges);
 				iLB();
 			})
