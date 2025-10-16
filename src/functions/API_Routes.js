@@ -80,6 +80,20 @@ API_router.get("/getSchoolAnalyze", async (req, res) => {
 						"Data_${int_Year}"."報到人數" AS 甄選一般生報到人數,
 						"Data_${int_Year}"."正備取有效性" AS 甄選一般生正備取有效性,
 						"Data_${int_Year}"."甄選名額流去登分比例" AS 甄選名額流去登分比例,
+						(
+							CASE
+							WHEN "一般生招生名額" = 0 THEN 
+								NULL
+							ELSE
+								(
+									(
+										cast ("一般生招生名額" AS DOUBLE PRECISION) -
+										cast ("一般生名額空缺" AS DOUBLE PRECISION)
+									) /
+									cast ("一般生招生名額" AS DOUBLE PRECISION)
+								)
+							END
+						) AS 甄選一般生錄取率,
 						"Data_${int_Year}"."r_score"
 						
 				FROM Public."Distr_${int_Year}"
