@@ -1,19 +1,9 @@
-import markdownit from "https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/+esm";
-import markdownItMultimdTable from "https://cdn.jsdelivr.net/npm/markdown-it-multimd-table@4.2.3/+esm";
+import showdown from "https://cdn.jsdelivr.net/npm/showdown@2.1.0/+esm";
+showdown.setFlavor("github");
 
-//- Markdown Settings
-const md = markdownit({
-	html: true,
-	linkify: true,
-	typographer: true,
-	breaks: true,
-}).use(markdownItMultimdTable, {
-	multiline: false,
-	rowspan: true,
-	headerless: false,
-	multibody: true,
-	aotolabel: true,
-});
+const showdownCt = new showdown.Converter({
+	tables: true
+}); //- MD convertor
 
 // 全局變量
 let selectedDepartment = null;
@@ -548,7 +538,8 @@ function updateSelectedDepartment(departmentElement) {
 		fetch(`/api/getSchoolAnalyze?year=${currentYear}&schoolID=${deptCode}`)
 			.then(async (res) => {
 				let { chat } = await res.json();
-				AITextBox.innerHTML = md.render(chat);
+				// AITextBox.innerHTML = md.render(chat);
+				AITextBox.innerHTML = showdownCt.makeHtml(chat);;
 			})
 			.catch((e) => {
 				AITextBox.textContent = `${e.message}`;

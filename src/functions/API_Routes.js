@@ -1,4 +1,4 @@
-import Express, { text } from "express";
+import Express from "express";
 import showdown from "showdown";
 import { QueryChat } from "./ollamaQuery.js";
 import dbClient from "./dataBase_Client.js";
@@ -106,18 +106,8 @@ API_router.get("/getSchoolAnalyze", async (req, res) => {
 			`,
 		};
 		let q = await dbClient.query(query);
-		const target = q.rows.find((x) => int_ID === x["校系代碼"]);
-
-		//- Construct data format
-		// const data = {};
-		// q.rows.forEach((elem) => {
-		// 	let { id, name, posvalid } = elem;
-		// 	data[id] = {
-		// 		name: name,
-		// 		posvalid: posvalid,
-		// 	};
-		// });
 		
+		const target = q.rows.find((x) => int_ID === x["校系代碼"]);
 		const data = q.rows.map((x) => {
 			return { [x["校系代碼"]]: x };
 		})[0];
