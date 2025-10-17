@@ -1,4 +1,3 @@
-import { text } from "express";
 import dbClient from "./dataBase_Client.js";
 import { rate_1vs1, Rating } from "ts-trueskill";
 
@@ -198,6 +197,9 @@ class Ts {
 	}
 }
 
+/* 
+	Exporting Functions
+*/
 export function Ts_matching_Ratings(year = 111, query_target) {
 	return Ts.target_matching_Ratings(year, query_target);
 };
