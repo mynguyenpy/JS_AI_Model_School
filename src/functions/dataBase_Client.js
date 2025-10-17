@@ -154,15 +154,16 @@ export class dataBase_methods {
 	}
 
 	static async getSummaryData(bodyData) {
-		const { year = "", mode } = bodyData;
+		const { year = "", mode, departmentCodes } = bodyData;
 		const year_Int = parseInt(year);
 
 		try {
+			let query_Summary, res_Sum;
 			const res_nodes = await dataBase_methods.getRelationData(bodyData);
 			switch (mode) {
 				case "school":
 					//- Summarize Schools into average values
-					const query_Summary = `
+					query_Summary = `
 						SELECT 
 							schoolcode,
 							AVG("posvalid") AS "posvalid",
@@ -179,7 +180,28 @@ export class dataBase_methods {
 							"schoolcode"
 					`;
 
-					const res_Sum = await dbClient.query(query_Summary);
+					res_Sum = await dbClient.query(query_Summary);
+					return res_Sum.rows;
+
+				case "department":
+					//- Summarize departments into average values
+					query_Summary = `
+						SELECT 
+							deptcode,
+							AVG("posvalid") AS "posvalid",
+							AVG("admissionvalidity") AS "admissionvalidity",
+							AVG("admissonrate") AS "admissonrate",
+							AVG("r_score") AS "r_score",
+							AVG("shiftratio") AS "shiftratio",
+							AVG("avg") AS "avg"
+						FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
+						WHERE "deptcode" in (
+							\'${res_nodes["nodes"].map(x => x[0]).join("','")}\'
+						)
+						GROUP BY 
+							"deptcode"
+					`;
+					res_Sum = await dbClient.query(query_Summary);
 					return res_Sum.rows;
 
 				default:
