@@ -1,6 +1,9 @@
 import { Pool } from "pg";
 import SchoolQueue from "../objects/schoolQueue.js";
 import { QueryViews } from "./DB/createDBViews.js";
+import {
+	Ts_matching_Ratings_Array,
+} from "./ts_validation.js";
 
 //- Make sure DB is connected
 console.log("Connecting Database...");
@@ -34,8 +37,10 @@ if (!dbClient) {
 		});
 	}
 }
+export default dbClient;
 
-function getPrompt(year = "0", post = "") {
+//- #NOTE :  DEPRECATED
+/* function getPrompt(year = "0", post = "") {
 	return `
     SELECT 
       "校系代碼" as id,
@@ -44,9 +49,6 @@ function getPrompt(year = "0", post = "") {
     FROM public."Data_${year}"
     where "正備取有效性" != 0 ${post}
   `;
-}
-
-export default dbClient;
 export class SchoolDB_Client {
 	SchoolQueue = new SchoolQueue();
 
@@ -72,7 +74,7 @@ export class SchoolDB_Client {
 				});
 		});
 	}
-}
+} */
 
 export class dataBase_methods {
 	static async initDatabase(year = 111) {
@@ -92,9 +94,8 @@ export class dataBase_methods {
 		//- Check table exist
 		try {
 			let res = await dbClient.query(query);
-			
-			if (res.rows[0] != 1)
-				await Promise.all([QueryViews(year)]);
+
+			if (res.rows[0] != 1) await Promise.all([QueryViews(year)]);
 		} catch (err) {
 			console.error(err);
 		} finally {
@@ -120,6 +121,97 @@ export class dataBase_methods {
 			console.error(err.message);
 		}
 	}
+
+	static async getRelationData(bodyData) {
+		const { year = "", mode, departmentCodes, universityCode } = bodyData;
+		const year_Int = parseInt(year);
+
+		try {
+			switch (mode) {
+				case "school":
+					//- getAllRelations for each department
+					const query = {
+						text: `
+							SELECT 
+								"deptcode"
+							FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
+							WHERE "schoolcode" = \'${universityCode}\'
+						`,
+						rowMode: "array",
+					};
+					let res_nodes = await dbClient.query(query);
+					return Ts_matching_Ratings_Array(
+						year_Int,
+						res_nodes.rows.flat()
+					);
+
+				default:
+					return Ts_matching_Ratings_Array(year_Int, departmentCodes);
+			}
+		} catch (err) {
+			console.error(err);
+		}
+	}
+
+	static async getSummaryData(bodyData) {
+		const { year = "", mode, departmentCodes } = bodyData;
+		const year_Int = parseInt(year);
+
+		try {
+			let query_Summary, res_Sum;
+			const res_nodes = await dataBase_methods.getRelationData(bodyData);
+			switch (mode) {
+				case "school":
+					//- Summarize Schools into average values
+					query_Summary = `
+						SELECT 
+							schoolcode,
+							AVG("posvalid") AS "posvalid",
+							AVG("admissionvalidity") AS "admissionvalidity",
+							AVG("admissonrate") AS "admissonrate",
+							AVG("r_score") AS "r_score",
+							AVG("shiftratio") AS "shiftratio",
+							AVG("avg") AS "avg"
+						FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
+						WHERE "schoolcode" in (
+							\'${res_nodes["nodes"].map((x) => x[0].slice(0, 3)).join("','")}\'
+						)
+						GROUP BY 
+							"schoolcode"
+					`;
+
+					res_Sum = await dbClient.query(query_Summary);
+					return res_Sum.rows;
+
+				case "department":
+					//- Summarize departments into average values
+					query_Summary = `
+						SELECT 
+							deptcode,
+							AVG("posvalid") AS "posvalid",
+							AVG("admissionvalidity") AS "admissionvalidity",
+							AVG("admissonrate") AS "admissonrate",
+							AVG("r_score") AS "r_score",
+							AVG("shiftratio") AS "shiftratio",
+							AVG("avg") AS "avg"
+						FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
+						WHERE "deptcode" in (
+							\'${res_nodes["nodes"].map(x => x[0]).join("','")}\'
+						)
+						GROUP BY 
+							"deptcode"
+					`;
+					res_Sum = await dbClient.query(query_Summary);
+					return res_Sum.rows;
+
+				default:
+					return res_nodes;
+			}
+		} catch (err) {
+			console.error(err);
+		}
+	}
+
 	//- 登記分發資料
 	static async getAllSchool_Distr(year_Int = -1) {
 		const query = `

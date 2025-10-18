@@ -1,3 +1,10 @@
+import showdown from "https://cdn.jsdelivr.net/npm/showdown@2.1.0/+esm";
+showdown.setFlavor("github");
+
+const showdownCt = new showdown.Converter({
+	tables: true
+}); //- MD convertor
+
 // 全局變量
 let selectedDepartment = null;
 let selectedUniversity = null;
@@ -5,6 +12,7 @@ let universityData = {};
 let originalUniversityData = {};
 let currentYear = "111"; // 預設年份
 let currentDisplayMode = "group"; // 預設顯示模式：系組
+let currentSumMode = "getSummaryData"; //- #NOTE : "getRelationData" or "getSummaryData"
 Chart.register(ChartDataLabels);
 
 // DOM 元素
@@ -93,18 +101,18 @@ function simplifyCategory(category) {
 		"07": "設計",
 		"08": "工管",
 		"09": "商管",
-		"10": "衛護",
-		"11": "食品",
-		"12": "幼保",
-		"13": "家政",
-		"14": "農業",
-		"15": "英語",
-		"16": "日語",
-		"17": "餐旅",
-		"18": "海事",
-		"19": "水產",
-		"20": "影視",
-		"21": "資管",
+		10: "衛護",
+		11: "食品",
+		12: "幼保",
+		13: "家政",
+		14: "農業",
+		15: "英語",
+		16: "日語",
+		17: "餐旅",
+		18: "海事",
+		19: "水產",
+		20: "影視",
+		21: "資管",
 	};
 	return mapping[category] || category;
 }
@@ -330,7 +338,6 @@ function initializeModeButtons() {
 async function initializeData() {
 	try {
 		universityData = await loadSchoolData(currentYear);
-		// originalUniversityData = JSON.parse(JSON.stringify(universityData)); // 深拷貝
 
 		if (Object.keys(universityData).length === 0) {
 			universityList.innerHTML =
@@ -440,6 +447,35 @@ function updateSelectedSchool(schoolElement) {
 		fullText: `${school.name} (${currentYear}年)`,
 	};
 
+	fetch(`api/${currentSumMode}`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(selectedUniversity),
+	})
+		.then((res) => res.json())
+		.then((json) => {
+			console.log(json);
+			const { nodes, edges } = json;
+			drawLineChart("chart-line-1", nodes, "錄取率", "admissonrate");
+			drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
+			drawLineChart(
+				"chart-line-3",
+				nodes,
+				"甄選名額流去登分比例",
+				"shiftratio"
+			);
+			drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
+			renderNetwork(nodes, edges);
+			iLB();
+			return json;
+		})
+		.catch((err) => {
+			console.error(err);
+			return err;
+		});
+
 	console.log("選中學校:", selectedUniversity);
 }
 
@@ -491,56 +527,60 @@ function updateSelectedDepartment(departmentElement) {
 			year: currentYear,
 			universityCode: schoolCode,
 			universityName: school.name,
-			departmentCode: deptCode,
+			departmentCodes: [deptCode],
 			departmentName: dept.name,
 			categories: categories,
 			mode: "group",
 			fullText: `${school.name} - ${dept.name} (${currentYear}年)`,
 		};
 
-		// 載入並繪製 network
-		fetch(`api/getRelationData?year=${currentYear}&id=${deptCode}`)
-			.then((res) => res.json())
-			.then((res) => {
-				const { nodes, edges } = res;
-
-				drawLineChart(
-					"chart-line-1",
-					nodes,
-					"錄取率",
-					"admissonrate"
-				);
-				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
-				drawLineChart(
-					"chart-line-3",
-					nodes,
-					"甄選名額流去登分比例",
-					"shiftratio"
-				);
-				drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
-				renderNetwork(nodes, edges);
-				iLB();
-			})
-			.catch((err) => {
-				console.error(`載入關係圖失敗:`, err);
-			});
-
 		selectedTitle.textContent = `${school.name} - ${dept.name}`;
 		selectedInfo.innerHTML = `
             學校代碼: ${schoolCode} | 科系代碼: ${deptCode} | 年份: ${currentYear}<br>
             模式: 系組模式 | 招生群別: ${categories.join(", ")}
         `;
-
+				
 		//- Get AI analyze
 		fetch(`/api/getSchoolAnalyze?year=${currentYear}&schoolID=${deptCode}`)
 			.then(async (res) => {
 				let { chat } = await res.json();
-				AITextBox.innerHTML = chat;
+				// AITextBox.innerHTML = md.render(chat);
+				AITextBox.innerHTML = showdownCt.makeHtml(chat);
 			})
 			.catch((e) => {
 				AITextBox.textContent = `${e.message}`;
 			});
 	}
+
+	// 載入並繪製 network
+	fetch(`api/${currentSumMode}`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(departmentInfo),
+	})
+		.then((res) => res.json())
+		.then((json) => {
+			const { nodes, edges } = json;
+
+			drawLineChart("chart-line-1", nodes, "錄取率", "admissonrate");
+			drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
+			drawLineChart(
+				"chart-line-3",
+				nodes,
+				"甄選名額流去登分比例",
+				"shiftratio"
+			);
+			drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
+			renderNetwork(nodes, edges);
+			iLB();
+			return json;
+		})
+		.catch((err) => {
+			console.error(err);
+			return err;
+		});
 
 	selectedInfo.classList.remove("no-selection");
 	selectedDepartment = departmentInfo;
@@ -772,7 +812,7 @@ function safeDraw(containerId, chartConfig) {
 	chartInstances[containerId] = new Chart(ctx, chartConfig);
 }
 function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
-	nodes = nodes.map(x => x[0]);
+	nodes = nodes.map((x) => x[0]);
 	const values = nodes.map((d) => parseFloat(localizeDept(d, [dataKey])));
 	const labels = nodes.map((d) => dataParser(d, ["schoolname", "deptname"]));
 
@@ -799,7 +839,7 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 					formatter: function (value) {
 						return value.toFixed(2); // 小數點兩位
 					},
-					font: { size: 10},
+					font: { size: 10 },
 				},
 				title: { display: true, text: chartName },
 			},
@@ -809,7 +849,9 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 	const labels = nodes.map((d) => dataParser(d[0], ["schoolname", "deptname"]));
 	const rValues = nodes.map((d) => d[1]);
-	const avgValues = nodes.map((d) => parseFloat(localizeDept(d[0], [avgKey])).toFixed(2));
+	const avgValues = nodes.map((d) =>
+		parseFloat(localizeDept(d[0], [avgKey])).toFixed(2)
+	);
 
 	safeDraw(containerId, {
 		type: "line",
@@ -869,37 +911,36 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 		},
 	});
 }
-function iLB(){
-		
-	const containers = document.querySelectorAll('.image-container.medium')
-	const lightbox = document.getElementById('lightbox')
-	const LBcontent = document.getElementById('lightbox-content')
-	const MC = document.querySelector('.main-content')
+function iLB() {
+	const containers = document.querySelectorAll(".image-container.medium");
+	const lightbox = document.getElementById("lightbox");
+	const LBcontent = document.getElementById("lightbox-content");
+	const MC = document.querySelector(".main-content");
 	let ACTcontainer = null;
 	let nS = null;
-	const dummy =document.createElement('div');
-	containers.forEach(container => {
-		container.addEventListener('click',function(){
-			if(!ACTcontainer){
-			dummy.className='placeholder-image';
-			dummy.style.width=container.offsetWidth+'px';
-			dummy.style.height=container.offsetHeight+'px';
-			dummy.style.display='inline-block'
-			ACTcontainer = container;
-			nS = container.nextSibling;
-			container.parentNode.insertBefore(dummy,nS);
-			lightbox.style.display='block';
-			LBcontent.innerHTML='';
-			LBcontent.appendChild(container);
+	const dummy = document.createElement("div");
+	containers.forEach((container) => {
+		container.addEventListener("click", function () {
+			if (!ACTcontainer) {
+				dummy.className = "placeholder-image";
+				dummy.style.width = container.offsetWidth + "px";
+				dummy.style.height = container.offsetHeight + "px";
+				dummy.style.display = "inline-block";
+				ACTcontainer = container;
+				nS = container.nextSibling;
+				container.parentNode.insertBefore(dummy, nS);
+				lightbox.style.display = "block";
+				LBcontent.innerHTML = "";
+				LBcontent.appendChild(container);
 			}
-		})
-	})
-	lightbox.addEventListener('click',function(e){
-		if(e.target == lightbox){
-			dummy.style.display='none';
-			MC.insertBefore(ACTcontainer,dummy);
-			lightbox.style.display='none';
-			LBcontent.innerHTML='';
+		});
+	});
+	lightbox.addEventListener("click", function (e) {
+		if (e.target == lightbox) {
+			dummy.style.display = "none";
+			MC.insertBefore(ACTcontainer, dummy);
+			lightbox.style.display = "none";
+			LBcontent.innerHTML = "";
 			ACTcontainer = null;
 		}
 	});
