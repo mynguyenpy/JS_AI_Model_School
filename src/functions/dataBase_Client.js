@@ -181,7 +181,7 @@ export class dataBase_methods {
 					res_Sum = await dbClient.query(query_Summary);
 					return res_Sum.rows;
 
-				case "department":
+				default:
 					//- Summarize departments into average values
 					query_Summary = `
 						SELECT 
@@ -201,9 +201,6 @@ export class dataBase_methods {
 					`;
 					res_Sum = await dbClient.query(query_Summary);
 					return res_Sum.rows;
-
-				default:
-					return res_nodes;
 			}
 		} catch (err) {
 			console.error(err);
