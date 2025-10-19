@@ -12,8 +12,9 @@ let universityData = {};
 let originalUniversityData = {};
 let currentYear = "111"; // 預設年份
 let currentDisplayMode = "group"; // 預設顯示模式：系組
-let currentSumMode = "getSummaryData"; //- #NOTE : "getRelationData" or "getSummaryData"
+let currentSumMode = "getRelationData"; //- #NOTE : "getRelationData" or "getSummaryData"
 Chart.register(ChartDataLabels);
+let Cstatus = false;
 
 // DOM 元素
 const searchBox = document.querySelector(".search-box");
@@ -22,6 +23,7 @@ const selectedTitle = document.getElementById("selected-title");
 const selectedInfo = document.getElementById("selected-info");
 const yearButtons = document.querySelectorAll(".year-button");
 const modeButtons = document.querySelectorAll(".mode-button");
+const changeButtons = document.querySelectorAll(".change-button");
 const AITextBox = document.getElementById("AI-input-area");
 
 // 從CSV文件讀取資料
@@ -121,7 +123,7 @@ function simplifyCategory(category) {
 function generateUniversityList(data, displayMode) {
 	let html = "";
 
-	if (displayMode === "school" || displayMode === "compare") {
+	if (displayMode === "school") {
 		// 學校模式：只顯示學校，不可展開     新增變化比較模式
 		Object.keys(data).forEach((schoolCode) => {
 			const school = data[schoolCode];
@@ -221,7 +223,7 @@ function switchDisplayMode(mode) {
 	if (currentDisplayMode === mode) {
 		return;
 	}
-
+	
 	currentDisplayMode = mode;
 
 	// 更新按鈕狀態
@@ -305,6 +307,24 @@ async function switchYear(year) {
 	}
 }
 
+function CompareChange(){
+	const ChangeT = document.getElementById('changeT');
+	const AllContainer = document.querySelectorAll('.image-container.medium, .image-container.large, .input-section');
+	Cstatus = !Cstatus;
+	changeButtons.forEach((btn) => {
+		btn.classList.remove("active");
+		ChangeT.style.display="none";
+		//AllContainer.forEach(item => {item.classList.toggle('hide'),console.log(item)});
+		AllContainer.forEach(item => item.classList.remove('hide'));
+		if (Cstatus) {
+			btn.classList.add("active");
+			ChangeT.style.display="table-column";
+			AllContainer.forEach(item => {item.classList.add('hide')});
+		}
+	});
+	
+}
+
 // 重置選擇狀態
 function resetSelection() {
 	selectedDepartment = null;
@@ -330,6 +350,14 @@ function initializeModeButtons() {
 		button.addEventListener("click", function () {
 			const mode = this.getAttribute("data-mode");
 			switchDisplayMode(mode);
+		});
+	});
+}
+
+function initializeChangeButtons() {
+	changeButtons.forEach((button) => {
+		button.addEventListener("click", function () {
+			CompareChange()
 		});
 	});
 }
@@ -364,7 +392,7 @@ async function initializeData() {
 
 // 初始化事件監聽器
 function initializeEventListeners() {
-	if (currentDisplayMode === "school" || currentDisplayMode === "compare") {
+	if (currentDisplayMode === "school") {
 		// 學校模式：直接點擊學校項目
 		document.querySelectorAll(".university-item").forEach((item) => {
 			item.addEventListener("click", function () {
@@ -380,9 +408,7 @@ function initializeEventListeners() {
 				updateSelectedSchool(this);
 			});
 		});
-		if(currentDisplayMode === "compare"){
-			changePage();
-		}
+
 	} else {
 		// 系所和系組模式：學校標題點擊事件
 		document.querySelectorAll(".university-header").forEach((header) => {
@@ -446,7 +472,6 @@ function updateSelectedSchool(schoolElement) {
         學校代碼: ${schoolCode} | 年份: ${currentYear}<br>
         模式: 比較模式
 	`
-	CompareChange();
 	;};
 	selectedInfo.classList.remove("no-selection");
 
@@ -457,8 +482,11 @@ function updateSelectedSchool(schoolElement) {
 		mode: "school",
 		fullText: `${school.name} (${currentYear}年)`,
 	};
-
-	fetch(`api/${currentSumMode}`, {
+	if(Cstatus){
+		console.log('比較模式 , 學校選取：',selectedUniversity);
+		Compare(selectedUniversity);
+	}
+	else{fetch(`api/${currentSumMode}`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -485,7 +513,7 @@ function updateSelectedSchool(schoolElement) {
 		.catch((err) => {
 			console.error(err);
 			return err;
-		});
+		});}
 
 	console.log("選中學校:", selectedUniversity);
 }
@@ -707,6 +735,7 @@ function initializeImageContainers() {
 document.addEventListener("DOMContentLoaded", function () {
 	initializeYearButtons(); // 初始化年份按鈕
 	initializeModeButtons(); // 初始化模式按鈕
+	initializeChangeButtons();
 	initializeData();
 	initializeImageContainers();
 });
@@ -956,43 +985,68 @@ function iLB() {
 		}
 	});
 }
-async function loadCdata(y){
-	const res = await fetch(`api/getRelationData?year=${y}&id=101001`);
+async function loadCdata(DATA){
+	const res = await fetch(`api/getSummaryData`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(DATA),
+	});
 	const node1 = await res.json();
-	console.log(node1);
-	return node1.nodes;
+	console.log('資料擷取完畢');
+	return node1;
 }
-function changePage(){
-	document.getElementById("TYear").textContent=`${currentYear}年R值`
-	document.getElementById("Pyear").textContent=`${currentYear-1}年R值`
-	const ChangeT = document.getElementById('changeT')
-	ChangeT.style.display="table-column";
-}
-async function CompareChange(){
-	const node1 = await loadCdata(currentYear)
+
+async function Compare(CurrentJson){
+	CurrentJson.year='111'
+	const node1 = await loadCdata(CurrentJson);
+	CurrentJson.year='112'
+	const node2 = await loadCdata(CurrentJson);
+	const arrays=[node1,node2];
 	const tableBody = document.querySelector('#resultTable tbody');
 	tableBody.innerHTML=''
-	console.log(node1);
-	const lup1={};
-	node1.forEach(item => lup1[item[0]] = item[1]);
-	const lup2={};
-	if(currentYear!=='111'){
-		const node2 = await loadCdata(currentYear-1)
-		node2.forEach(item => lup2[item[0]] = item[1]);
-	}
+
+	const lookups = arrays.map(item => {
+		const obj ={};
+		item.forEach(i =>{
+			obj[i.schoolcode] = i.r_score;
+		});
+		return obj;
+	});
+	const lup1=lookups[0];
+	const lup2=lookups[1];
 	const allK = await Array.from(new Set([...Object.keys(lup1), ...Object.keys(lup2)]));
 	console.log(allK,lup1)
-	const MA = allK.map(key =>[
-		key,
-		lup1[key] !== undefined ? lup1[key] : "---",
-		lup2[key] !== undefined ? lup2[key] : "---"
-	]);
-	console.log(MA)
+	const MA = Array.from(allK).sort((a,b)=>a-b).map(key=>{
+		return[
+			key,
+			lup1[key] !== undefined ? lup1[key] : "---",
+			lup2[key] !== undefined ? lup2[key] : "---"
+		]; 
+	});
+	/* const allS = new Set();
+	lookups.forEach(obj => Object.keys(obj).forEach(k => allS.add(k)));
+	const MA = Array.from(allS).sort((a,b)=>a-b).map(s =>{
+		const row=[s];
+		lookups.forEach(obj=>row.push(obj[s]!==undefined ? obj[s]: "---"));
+		return row;
+	}); */
+
 	MA.forEach(row =>{
 		const tr = document.createElement("tr");
-		row.forEach(item =>{
-			let td = document.createElement("td");
+		row.forEach((item,index) =>{
+			const td = document.createElement("td");
 			td.textContent = item;
+			if(index===2){
+				if(item !=="---" && lup1[row[0]] !==undefined){
+					td.style.backgroundColor = '#ffffffff'
+				}else if (item ==="---" && lup1[row[0]] !== undefined){
+					td.style.backgroundColor = '#ff0000ff'
+				}else{
+					td.style.backgroundColor = '#22e122ff'
+				}
+			}
 			tr.appendChild(td);
 		})
 		tableBody.appendChild(tr);

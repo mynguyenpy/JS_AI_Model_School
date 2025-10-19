@@ -148,7 +148,8 @@ body::before {
 }
 
 .year-buttons,
-.mode-buttons {
+.mode-buttons,
+.change-buttons {
     display: flex;
     gap: 8px;
     justify-content: center;
@@ -156,7 +157,8 @@ body::before {
 }
 
 .year-button,
-.mode-button {
+.mode-button,
+.change-button {
     padding: 10px 18px;
     border: 2px solid transparent;
     border-radius: 25px;
@@ -175,7 +177,8 @@ body::before {
 }
 
 .year-button::before,
-.mode-button::before {
+.mode-button::before,
+.change-button::before {
     content: '';
     position: absolute;
     top: 0;
@@ -187,19 +190,22 @@ body::before {
 }
 
 .year-button:hover::before,
-.mode-button:hover::before {
+.mode-button:hover::before,
+.change-button:hover:before {
     left: 100%;
 }
 
 .year-button:hover,
-.mode-button:hover {
+.mode-button:hover,
+.change-button:hover {
     background: rgba(255, 255, 255, 0.95);
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
 }
 
 .year-button.active,
-.mode-button.active {
+.mode-button.active,
+.change-button.active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     color: white;
     border-color: transparent;
@@ -208,7 +214,8 @@ body::before {
 }
 
 .year-button.active:hover,
-.mode-button.active:hover {
+.mode-button.active:hover,
+.change-button.active:hover {
     background: linear-gradient(135deg, #5a6fd8 0%, #6a42a0 50%, #e085f0 100%);
     transform: translateY(-3px);
 }
@@ -673,12 +680,14 @@ canvas{
     position: relative;
     overflow: hidden;
 }
+.hide{display: none !important;}
+
+
 table,th,td{
     border: 1px solid black;
     border-collapse: collapse;
     padding: 8px;
 }
-.hide{display: none;}
 
 #lightbox {
     display: none;
@@ -875,7 +884,8 @@ table,th,td{
     }
     
     .year-button,
-    .mode-button {
+    .mode-button,
+    .change-button {
         padding: 8px 14px;
         font-size: 12px;
         min-width: 50px;
@@ -923,7 +933,8 @@ table,th,td{
 .university-header.active,
 .university-item.selected,
 .year-button.active,
-.mode-button.active {
+.mode-button.active,
+.change-button.active {
     animation: glow 2s ease-in-out infinite alternate;
 }
 
