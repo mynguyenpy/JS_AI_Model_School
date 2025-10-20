@@ -1,0 +1,38 @@
+name: Code Review with ollama
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+permissions: write-all
+
+jobs:
+  code_review:
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v5.0.0
+
+      - 
+        name: Setup Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          hostname: Github-actions
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+      
+      - 
+        name: Run Ollama Code Review
+        uses: ray5273/ollama-pr-review-action@v1.0.0
+        with:
+          OLLAMA_API_URL: ${{ secrets.OLLAMA_ADDRESS }} # Local Ollama server
+          MY_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RESPONSE_LANGUAGE: '台灣繁體中文zh-TW'
+          MODEL: ${{ secrets.OLLAMA_MODEL }}
+          TRANSLATION_MODEL: ${{ secrets.OLLAMA_MODEL_GENERAL }}
