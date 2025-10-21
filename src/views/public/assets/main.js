@@ -12,9 +12,11 @@ let universityData = {};
 let originalUniversityData = {};
 let currentYear = "111"; // 預設年份
 let currentDisplayMode = "group"; // 預設顯示模式：系組
-let currentSumMode = "getSummaryData"; //- #NOTE : "getRelationData" or "getSummaryData"
+let currentSumMode = "getRelationData"; //- #NOTE : "getRelationData" or "getSummaryData"
 Chart.register(ChartDataLabels);
-
+let Cstatus = false;
+let SelectItem = null;
+let CompareJson = null;
 // DOM 元素
 const searchBox = document.querySelector(".search-box");
 const universityList = document.getElementById("universityList");
@@ -22,7 +24,12 @@ const selectedTitle = document.getElementById("selected-title");
 const selectedInfo = document.getElementById("selected-info");
 const yearButtons = document.querySelectorAll(".year-button");
 const modeButtons = document.querySelectorAll(".mode-button");
+const changeButtons = document.querySelectorAll(".change-button");
 const AITextBox = document.getElementById("AI-input-area");
+const FirstYear = document.getElementById("SelectYear");
+const SecYear = document.getElementById("CompareYear");
+
+
 
 // 從CSV文件讀取資料
 async function loadSchoolData(year = "111") {
@@ -122,7 +129,7 @@ function generateUniversityList(data, displayMode) {
 	let html = "";
 
 	if (displayMode === "school") {
-		// 學校模式：只顯示學校，不可展開
+		// 學校模式：只顯示學校，不可展開     新增變化比較模式
 		Object.keys(data).forEach((schoolCode) => {
 			const school = data[schoolCode];
 			html += `
@@ -221,9 +228,13 @@ function switchDisplayMode(mode) {
 	if (currentDisplayMode === mode) {
 		return;
 	}
-
+	
+	selectedTitle.textContent = "尚未選擇學校";
+	selectedInfo.textContent = "請從左側列表選擇學校或科系";
+	CompareJson=null;
 	currentDisplayMode = mode;
-
+	SelectItem = null;
+	
 	// 更新按鈕狀態
 	modeButtons.forEach((btn) => {
 		btn.classList.remove("active");
@@ -271,8 +282,20 @@ async function switchYear(year) {
 		// 更新全局變量
 		currentYear = year;
 		universityData = newData;
+		SecYear.value = currentYear;
 		// originalUniversityData = JSON.parse(JSON.stringify(newData));
-
+		if(CompareJson){
+			switch(currentDisplayMode){
+				case 'school':{
+					updateSelectedSchool(SelectItem);
+					break
+				}
+				case 'group':
+				case 'department':{
+					updateSelectedDepartment(SelectItem);
+					break
+				}
+		}}
 		// 更新年份按鈕狀態
 		yearButtons.forEach((btn) => {
 			btn.classList.remove("active");
@@ -305,12 +328,45 @@ async function switchYear(year) {
 	}
 }
 
+function CompareChange(){
+	const ChangeT = document.getElementById('changeT');
+	const AllContainer = document.querySelectorAll('.image-container.medium, .image-container.large, .input-section');
+	Cstatus = !Cstatus;
+	changeButtons.forEach((btn) => {
+		btn.classList.remove("active");
+		ChangeT.style.display="none";
+		//AllContainer.forEach(item => {item.classList.toggle('hide'),console.log(item)});
+		AllContainer.forEach(item => item.classList.remove('hide'));
+		if (Cstatus) {
+			btn.classList.add("active");
+			ChangeT.style.display="table-column";
+			AllContainer.forEach(item => {item.classList.add('hide')});
+			if(CompareJson){Compare(CompareJson);};
+		}else{
+			if(SelectItem){
+				switch(currentDisplayMode){
+					case 'school':{
+						updateSelectedSchool(SelectItem);
+						break
+					}
+					case 'group':
+					case 'department':{
+						updateSelectedDepartment(SelectItem);
+						break
+					}
+				}
+			}
+		}
+	});
+	
+}
+
 // 重置選擇狀態
 function resetSelection() {
 	selectedDepartment = null;
 	selectedUniversity = null;
-	selectedTitle.textContent = "尚未選擇學校";
-	selectedInfo.textContent = "請從左側列表選擇學校或科系";
+	//selectedTitle.textContent = "尚未選擇學校";
+	//selectedInfo.textContent = "請從左側列表選擇學校或科系";
 	selectedInfo.classList.add("no-selection");
 }
 
@@ -331,6 +387,26 @@ function initializeModeButtons() {
 			const mode = this.getAttribute("data-mode");
 			switchDisplayMode(mode);
 		});
+	});
+}
+
+function initializeChangeButtons() {
+	changeButtons.forEach((button) => {
+		button.addEventListener("click", function () {
+			CompareChange()
+		});
+	});
+}
+
+function initializeYearSelects() {
+	FirstYear.addEventListener("change", function(){
+		FirstYear.value = this.value;
+		Compare(CompareJson);
+	});
+	SecYear.addEventListener("change", function(){
+		SecYear.value = this.value;
+		switchYear(SecYear.value);
+		
 	});
 }
 
@@ -375,11 +451,12 @@ function initializeEventListeners() {
 
 				// 添加選中狀態
 				this.classList.add("selected");
-
+				SelectItem = this;
 				// 更新選中信息
 				updateSelectedSchool(this);
 			});
 		});
+
 	} else {
 		// 系所和系組模式：學校標題點擊事件
 		document.querySelectorAll(".university-header").forEach((header) => {
@@ -413,7 +490,7 @@ function initializeEventListeners() {
 
 				// 添加選中狀態
 				this.classList.add("selected");
-
+				SelectItem=this;
 				// 更新選中信息
 				updateSelectedDepartment(this);
 			});
@@ -431,12 +508,18 @@ function initializeEventListeners() {
 function updateSelectedSchool(schoolElement) {
 	const schoolCode = schoolElement.getAttribute("data-code");
 	const school = universityData[schoolCode];
-
 	selectedTitle.textContent = school.name;
+	if(currentDisplayMode === "school"){
 	selectedInfo.innerHTML = `
         學校代碼: ${schoolCode} | 年份: ${currentYear}<br>
         模式: 學校模式
-    `;
+    `;}
+	else{
+		selectedInfo.innerHTML = `
+        學校代碼: ${schoolCode} | 年份: ${currentYear}<br>
+        模式: 比較模式
+	`
+	;};
 	selectedInfo.classList.remove("no-selection");
 
 	selectedUniversity = {
@@ -446,8 +529,11 @@ function updateSelectedSchool(schoolElement) {
 		mode: "school",
 		fullText: `${school.name} (${currentYear}年)`,
 	};
-
-	fetch(`api/${currentSumMode}`, {
+	if(!CompareJson) CompareJson = selectedUniversity;
+	if(Cstatus){
+		Compare(selectedUniversity);
+	}
+	else{fetch(`api/${currentSumMode}`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -456,7 +542,6 @@ function updateSelectedSchool(schoolElement) {
 	})
 		.then((res) => res.json())
 		.then((json) => {
-			console.log(json);
 			const { nodes, edges } = json;
 			drawLineChart("chart-line-1", nodes, "錄取率", "admissonrate");
 			drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
@@ -474,7 +559,7 @@ function updateSelectedSchool(schoolElement) {
 		.catch((err) => {
 			console.error(err);
 			return err;
-		});
+		});}
 
 	console.log("選中學校:", selectedUniversity);
 }
@@ -488,7 +573,6 @@ function updateSelectedDepartment(departmentElement) {
 	const school = universityData[schoolCode];
 
 	let departmentInfo = {};
-
 	if (currentDisplayMode === "department") {
 		// 系所模式
 		const deptCodes = departmentElement.getAttribute("data-codes").split("|");
@@ -551,9 +635,13 @@ function updateSelectedDepartment(departmentElement) {
 				AITextBox.textContent = `${e.message}`;
 			});
 	}
-
+	if(!CompareJson) CompareJson = departmentInfo;
+	
+	if(Cstatus){
+		Compare(departmentInfo);
+	}
 	// 載入並繪製 network
-	fetch(`api/${currentSumMode}`, {
+	else{fetch(`api/${currentSumMode}`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -580,7 +668,7 @@ function updateSelectedDepartment(departmentElement) {
 		.catch((err) => {
 			console.error(err);
 			return err;
-		});
+		});}
 
 	selectedInfo.classList.remove("no-selection");
 	selectedDepartment = departmentInfo;
@@ -696,6 +784,8 @@ function initializeImageContainers() {
 document.addEventListener("DOMContentLoaded", function () {
 	initializeYearButtons(); // 初始化年份按鈕
 	initializeModeButtons(); // 初始化模式按鈕
+	initializeChangeButtons();
+	initializeYearSelects();
 	initializeData();
 	initializeImageContainers();
 });
@@ -944,4 +1034,82 @@ function iLB() {
 			ACTcontainer = null;
 		}
 	});
+}
+async function loadCdata(DATA,yearData){
+	DATA.year=yearData
+	const res = await fetch(`api/getSummaryData`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(DATA),
+	});
+	const node1 = await res.json();
+	console.log('資料擷取完畢');
+	return node1;
+}
+
+async function Compare(CurrentJson){
+	if (!CurrentJson){console.log('沒東西');return};
+	const tableBody = document.querySelector('#resultTable tbody');
+	tableBody.innerHTML='等待中'
+	CompareJson = CurrentJson;
+	const SelY1 = FirstYear.value;
+	const SelY2 = SecYear.value;
+
+	const [node1,node2] = await Promise.all([
+		loadCdata(CompareJson,SelY1),
+		loadCdata(CompareJson,SelY2)
+	]);
+	const arrays=[node1,node2];
+	tableBody.innerHTML=''
+	const lookups = arrays.map(item => {
+		const obj ={};
+		item.forEach(i =>{
+			if(currentDisplayMode==="school")obj[i.schoolcode] = i.r_score;
+			else{obj[i.deptcode] = i.r_score;}
+		});
+		return obj;
+	});
+	const nameLU={};
+	[node1,node2].forEach(item=>{
+		item.forEach(i=>{
+		if(currentDisplayMode==="school")nameLU[i.schoolcode]=i.schoolname;
+		else{nameLU[i.deptcode]=`${i.schoolname} ${i.deptname}`
+	}})
+		
+	})
+	const lup1=lookups[0];
+	const lup2=lookups[1];
+	const allK = await Array.from(new Set([...Object.keys(lup1), ...Object.keys(lup2)]));
+	
+	const MA = Array.from(allK).sort((a,b)=>a-b).map(key=>{
+		return[
+			key,
+			lup1[key] !== undefined ? lup1[key] : "---",
+			lup2[key] !== undefined ? lup2[key] : "---",
+			nameLU[key] || "---"
+		]; 
+	});
+
+
+	MA.forEach(row =>{
+		const tr = document.createElement("tr");
+		row.forEach((item,index) =>{
+			const td = document.createElement("td");
+			td.textContent = item;
+			if(index===3){
+				if(lup1[row[0]] !==undefined && lup2[row[0]] !==undefined){
+					td.style.backgroundColor = '#ffffffff'
+				}else if (lup2[row[0]] === undefined){
+					td.style.backgroundColor = '#f66262ff'
+				}else{
+					td.style.backgroundColor = '#74e874ff'
+				}
+			}
+			tr.appendChild(td);
+		})
+		tableBody.appendChild(tr);
+	})
+	
 }
