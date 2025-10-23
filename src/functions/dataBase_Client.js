@@ -83,8 +83,8 @@ export class dataBase_methods {
 			text: `
         SELECT 
           cast (COUNT (*) AS Integer)
-        FROM information_schema.views
-        WHERE table_name LIKE '${query_TableName}'
+        FROM pg_matviews
+        WHERE matviewname LIKE '${query_TableName}'
       `,
 			rowMode: "array",
 		};

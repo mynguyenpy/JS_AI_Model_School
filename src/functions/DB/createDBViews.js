@@ -65,7 +65,7 @@ async function createDataView(year) {
 	const create = {
 		name: `create-QUERY_${year}_VIEW_Table`,
 		text: `
-      CREATE OR REPLACE View "${query_TableName}" AS
+      CREATE MATERIALIZED VIEW "${query_TableName}" AS
         ${query.text}
     `,
 	};
