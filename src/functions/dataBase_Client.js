@@ -156,6 +156,7 @@ export class dataBase_methods {
 			year_TG,
 			mode,
 			departmentCodes,
+			universityCode,
 			universityName,
 		} = bodyData;
 
@@ -167,19 +168,21 @@ export class dataBase_methods {
 			case "school":
 				sc_query_Summary = `
 				SELECT 
-					SC_TB.schoolcode AS \"SC\",
-					TG_TB.schoolcode AS \"TG\"
+					SC_TB.schoolcode AS SC,
+					TG_TB.schoolcode AS TG
 				FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}" SC_TB
 				JOIN
 				(
-					SELECT 
-						*
-					FROM public."QUERY_${year_TG_Int}${process.env.QUERY_POSTFIX || ""}"
+					SELECT *
+					FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
 				) TG_TB
-				ON SC_TB.schoolcode = TG_TB.schoolcode
+				ON SC_TB.schoolname = TG_TB.schoolname
 				WHERE 
-					SC_TB.schoolcode = \'${universityName}\' AND
+					SC_TB.schoolcode = \'${universityCode}\' AND
 					SC_TB.schoolname = TG_TB.schoolname
+				GROUP BY 
+					SC_TB.schoolcode,
+					TG_TB.schoolcode
 				`;
 				break;
 			default:
@@ -190,8 +193,7 @@ export class dataBase_methods {
 				FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}" SC_TB
 				JOIN
 				(
-					SELECT 
-						*
+					SELECT *
 					FROM public."QUERY_${year_TG_Int}${process.env.QUERY_POSTFIX || ""}"
 				) TG_TB
 				ON SC_TB.schoolcode = TG_TB.schoolcode
@@ -206,8 +208,16 @@ export class dataBase_methods {
 		}
 
 		try {
-			let res = await dbClient.query(sc_query_Summary);
-			return res.rows[0];
+			let res = await dbClient.query({text: sc_query_Summary, rowMode: 'array'});
+
+			//- Transform Data
+			const result = [[], []];
+			res.rows.forEach(([SC = "000000", TG]) => {
+				result[0] = [...result[0], SC];
+				result[1] = [...result[1], TG];
+			});
+			
+			return result;
 		} catch (error) {
 			console.error(error);
 		}
@@ -231,16 +241,19 @@ export class dataBase_methods {
 						SELECT 
 							schoolcode,
 							schoolname,
-							"posvalid",
-							"admissionvalidity",
-							"admissonrate",
-							"r_score",
-							"shiftratio",
-							"avg"
+							AVG("posvalid") AS "posvalid",
+							AVG("admissionvalidity") AS "admissionvalidity",
+							AVG("admissonrate") AS "admissonrate",
+							AVG("r_score") AS "r_score",
+							AVG("shiftratio") AS "shiftratio",
+							AVG("avg") AS "AVG"
 						FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
 						WHERE "schoolcode" in (
 							\'${res_nodes["nodes"].map((x) => x[0].slice(0, 3)).join("','")}\'
 						)
+						GROUP BY
+							schoolcode,
+							schoolname
 					`;
 					break;
 

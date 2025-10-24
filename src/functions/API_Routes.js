@@ -143,16 +143,25 @@ API_router.post("/getRelationData", async (req, res) => {
 API_router.post("/getSummaryData", async (req, res) => {
 	try {
 		const { body } = req;
-		const { SC = '000000', TG } = await dataBase_methods.getDepartCodeInTargetYear(body);
-		const [sc_summary, tg_summary] = await Promise.all([
-			dataBase_methods.getSummaryData({ ...body, departmentCodes: [SC] }),
-			dataBase_methods.getSummaryData({
-				...body,
-				year: body.year_TG,
-				departmentCodes: [TG],
-			}),
-		]);
-		
+		const [source_Cols, target_Cols] =
+			await dataBase_methods.getDepartCodeInTargetYear(body);
+
+		//- columns
+		const targets = [
+			source_Cols.map((sc) =>
+				dataBase_methods.getSummaryData({ ...body, departmentCodes: [sc] })
+			),
+			target_Cols.map((tg) =>
+				dataBase_methods.getSummaryData({
+					...body,
+					year: body.year_TG,
+					departmentCodes: [tg],
+				})
+			),
+		];
+		const targetsMap = targets.map((x) => Promise.all(x));
+		const [sc_summary, tg_summary] = await Promise.all(targetsMap);
+
 		res.status(200).json({
 			source: sc_summary,
 			target: tg_summary,
