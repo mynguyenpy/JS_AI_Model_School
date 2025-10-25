@@ -957,7 +957,7 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 					color:(ctx) => ctx.index === 0 ? 'red' : 'black',
 					callback: function(value,index,ticks) {
 					const words = String(this.getLabelForValue(value)).split('');
-					words.forEach(i =>{i===','?words[words.indexOf(i)]=' ':i});
+					words.forEach(i =>{i===','?words[words.indexOf(i)]=' ':i,i==='（' || i==='）'?words.splice(words.indexOf(i),1):i});
 					return words;
 				}}},
 				y:{suggestedMin:0,suggestedMax:1.2}},
@@ -980,7 +980,6 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 		CalcRanks(rValues),
 		CalcRanks(avgValues)
 	];
-	console.log('Ranks:',ranks);
 	safeDraw(containerId, {
 		type: "bar",
 		data: {
@@ -1040,7 +1039,8 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 					color:(ctx) => ctx.index === 0 ? 'red' : 'black',
 					callback: function(value,index,ticks) {
 					const words = String(this.getLabelForValue(value)).split('');
-					words.forEach(i =>{i===','?words[words.indexOf(i)]=' ':i});
+					console.log(words);
+					words.forEach(i =>{i===','?words[words.indexOf(i)]=' ':i,i==='（' || i==='）'?words.splice(words.indexOf(i),1):i});
 					return words;
 				}}},
 				y1: {
