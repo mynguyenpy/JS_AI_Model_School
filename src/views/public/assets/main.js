@@ -996,13 +996,15 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 						const rank = ranks[ctx.datasetIndex][ctx.dataIndex];
 						return rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "#cd7f32" : "#000000";
 					},
-					align: "top",
+					align: (ctx)=> ctx.datasetIndex === 0 ? "top" : "bottom",
 					anchor: "end",
-					formatter: function (value, ctx) {return `（${ranks[ctx.datasetIndex][ctx.dataIndex]}）\n${value}`;},
+					formatter: function (value, ctx) {return `(${ranks[ctx.datasetIndex][ctx.dataIndex]}）\n${value}`;},
 					font: (ctx) => { 
 						const rank = ranks[ctx.datasetIndex][ctx.dataIndex];
 						return { size: rank <= 3 ? 12 : 10, weight: rank <= 3 ? 'bold' : 'normal' };
 					 },
+					 clip: false,
+					 offset: -18,
 				},
 			},
 			scales: {
