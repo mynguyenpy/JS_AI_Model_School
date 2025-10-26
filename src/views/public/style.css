@@ -502,6 +502,7 @@ body::before {
 
 .image-container.medium {
     min-height: 400px;
+    height: 100%;
     display: grid;
     grid-template-columns: 100%;
 }
@@ -714,7 +715,6 @@ thead {
     display: none;
     position: fixed;
     top: 0;left: 0;
-    inset: 0;
     width: 100vw;height:100vh;
     backdrop-filter: blur(3px);
     z-index: 111;
@@ -726,8 +726,10 @@ thead {
     transform: translate(12%,50%);
     padding: 30px;
     margin: 0;
-    top: auto;
-    width: 75vw;
+    top: -40%;
+    left: -6%;
+    width: 90vw;
+    height: 90vh;
     overflow: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
 }
