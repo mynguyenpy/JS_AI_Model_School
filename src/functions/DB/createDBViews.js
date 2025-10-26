@@ -156,48 +156,58 @@ async function createDataView(year, query_TableName) {
 
 //- Prefix "QUERY_Admission_" => 甄選選擇
 async function createAdmissionView(year, query_TableName) {
+  const competitions = ['二','三','四','五','六'];
+  
+  let drawTable = "";
+  competitions.forEach((x, index) => {
+    let draws = competitions.slice(index + 1);
+    if (draws.length != 0) {
+      const drawExpress = `
+        UNION (
+          SELECT 
+            CAST (WINNER AS text),
+            CAST (LOSER AS text),
+            true AS isDraw
+          FROM
+          (
+            SELECT 
+              ${x} AS WINNER,
+              unnest(array[
+                ${draws}
+              ]) AS LOSER
+            FROM public.admission_${year}
+          )
+        )`;
+      drawTable += drawExpress;
+    }
+  });
+
   const query = {
     text: `
+      SELECT * FROM
       (
-				SELECT
-					CAST (WINNER AS text),
-					CAST (LOSER AS text),
-					false AS isDraw
-				FROM
-				(
-					SELECT
-						一 AS WINNER,
-						unnest(array[
-							二,
-							三,
-							四,
-							五,
-							六
-						]) AS LOSER
-					FROM public.admission_${year}
-				)
-				WHERE 
-					LOSER IS NOT NULL
-			) UNION (
-				SELECT 
-					CAST (WINNER AS text),
-					CAST (LOSER AS text),
-					true AS isDraw
-				FROM
-				(
-					SELECT 
-						二 AS WINNER,
-						unnest(array[
-							三,
-							四,
-							五,
-							六
-						]) AS LOSER
-					FROM public.admission_${year}
-				)
-				WHERE 
-					LOSER IS NOT NULL
-			)
+        (
+          SELECT
+            CAST (WINNER AS text),
+            CAST (LOSER AS text),
+            false AS isDraw
+          FROM
+          (
+            SELECT
+              一 AS WINNER,
+              unnest(array[
+                二,
+                三,
+                四,
+                五,
+                六
+              ]) AS LOSER
+            FROM public.admission_${year}
+          )
+        ) ${drawTable}
+      )
+      WHERE 
+        LOSER IS NOT NULL
     `,
   };
   const create = {
