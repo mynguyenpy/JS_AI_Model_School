@@ -1,6 +1,5 @@
 import { Pool } from "pg";
-import SchoolQueue from "../objects/schoolQueue.js";
-import { QueryViews } from "./DB/createDBViews.js";
+import { QueryViews, QueryAdmissionViews } from "./DB/createDBViews.js";
 import {
 	Ts_matching_Ratings_Array,
 } from "./ts_validation.js";
@@ -8,6 +7,7 @@ import {
 //- Make sure DB is connected
 console.log("Connecting Database...");
 
+const postfix = process.env.QUERY_POSTFIX || "";
 let dbClient = null;
 if (!dbClient) {
 	/* dbClient = new Client({
@@ -26,8 +26,15 @@ if (!dbClient) {
 		port: process.env.DB_PORT,
 	});
 
+	//- Initialization
 	try {
 		dbClient = await pool.connect();
+
+		//- Check table existence
+		pool.on('connect', async (client) => {
+			
+		})
+
 		console.log("\x1b[42mDatabase Connected.\x1b[0m \n");
 	} catch (error) {
 		//- The error is "AggregateError"
@@ -37,48 +44,25 @@ if (!dbClient) {
 		});
 	}
 }
+
+//-Exports
 export default dbClient;
-
-//- #NOTE :  DEPRECATED
-/* function getPrompt(year = "0", post = "") {
-	return `
-    SELECT 
-      "校系代碼" as id,
-      "學校" as name,
-      "正備取有效性" as posvalid
-    FROM public."Data_${year}"
-    where "正備取有效性" != 0 ${post}
-  `;
-export class SchoolDB_Client {
-	SchoolQueue = new SchoolQueue();
-
-	//- Get DB school
-	getAnalyzeSchools(year = "") {
-		const query = getPrompt(year, "LIMIT 50");
-
-		return new Promise((resolve, reject) => {
-			dbClient
-				.query(query)
-				.then((_res) => {
-					//- Add to school
-					_res.rows.forEach((obj) => {
-						if (obj) {
-							this.SchoolQueue.AddSchool(obj);
-						}
-						resolve(this.SchoolQueue);
-					});
-				})
-				.catch((err) => {
-					console.error(err.message);
-					reject(err.message);
-				});
-		});
-	}
-} */
-
+export function initServerData(years = []) {
+	return Promise.all(years.map((x) => dataBase_methods.initDatabase(x)));
+};
 export class dataBase_methods {
 	static async initDatabase(year = 111) {
-		const query_TableName = `QUERY_${year}${process.env.QUERY_POSTFIX || ""}`;
+		
+		//- #NOTE admission have to be first
+		//	-- because other views depend on it
+		await this.initCreateDatabase(year, "admission");
+		await this.initCreateDatabase(year);
+	}
+	static async initCreateDatabase(year = 111, TableName = "") {
+		const query_TableName = `QUERY_${year}${
+			(TableName !== "" ? "_" : "") + TableName
+		}${postfix}`;
+
 		const query = {
 			text: `
         SELECT 
@@ -89,13 +73,26 @@ export class dataBase_methods {
 			rowMode: "array",
 		};
 
-		console.log(`📄 \x1b[33m- Checking ${query_TableName} Tables.\x1b[0m`);
+		console.log(`📄 \x1b[33m- Checking \"${query_TableName}\" Tables.\x1b[0m`);
 
 		//- Check table exist
 		try {
 			let res = await dbClient.query(query);
 
-			if (res.rows[0] != 1) await Promise.all([QueryViews(year)]);
+			if (res.rows[0] != 1) {
+				switch (TableName) {
+					case "admission":
+						await QueryAdmissionViews(year, query_TableName);
+						break;
+				
+					default:
+						await QueryViews(year, query_TableName);
+						break;
+				};
+				console.log(
+					`  ✅\x1b[32m-- Successfully create \"${query_TableName}\" view.👁️\x1b[0m`
+				);
+			};
 		} catch (err) {
 			console.error(err);
 		} finally {
@@ -111,7 +108,31 @@ export class dataBase_methods {
 	static async getAllSchool(year_Int = -1) {
 		const query = `
       SELECT *
-      FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
+      FROM public."QUERY_${year_Int}${postfix}"
+    `;
+
+		try {
+			let res = await dbClient.query(query);
+			return res.rows;
+		} catch (err) {
+			console.error(err.message);
+		}
+	}
+	static async getAllSumSchool(year_Int = -1) {
+		const query = `
+      SELECT 
+				schoolcode,
+				schoolname,
+				AVG(posvalid) AS posvalid,
+				AVG(admissionvalidity) AS admissionvalidity,
+				AVG(admissonrate) AS admissonrate,
+				AVG(r_score) AS r_score,
+				AVG(shiftratio) AS shiftratio,
+				AVG("avg") AS "avg"
+			FROM public."QUERY_${year_Int}${postfix}"
+			GROUP BY
+				schoolcode,
+				schoolname
     `;
 
 		try {
@@ -126,25 +147,60 @@ export class dataBase_methods {
 		const { year = "", mode, departmentCodes, universityCode } = bodyData;
 		const year_Int = parseInt(year);
 
+		let query;
 		try {
 			switch (mode) {
 				case "school":
 					//- getAllRelations for each department
-					const query = {
+					query = {
 						text: `
-							SELECT 
-								"deptcode"
-							FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
-							WHERE "schoolcode" = \'${universityCode}\'
+						SELECT
+							winner,
+							loser,
+							array_agg(isdraw) AS results
+						FROM (
+							SELECT
+								SUBSTRING(winner,1,3) AS winner,
+								SUBSTRING(loser,1,3) AS loser,
+								isdraw
+							FROM public.\"QUERY_${year_Int}_admission${postfix}\"
+							WHERE
+								winner LIKE '${universityCode}%' OR
+								loser LIKE '${universityCode}%'
+						)
+						WHERE
+							(winner != loser) 
+						GROUP BY
+							winner,
+							loser
 						`,
 						rowMode: "array",
 					};
-					let res_nodes = await dbClient.query(query);
-					return Ts_matching_Ratings_Array(year_Int, res_nodes.rows.flat());
+					break;
 
 				default:
-					return Ts_matching_Ratings_Array(year_Int, departmentCodes);
+					let stringify = departmentCodes.join("','");
+					query = {
+						text: `
+							SELECT
+								winner,
+								loser,
+								array_agg(isdraw)
+							FROM public.\"QUERY_${year_Int}_admission${postfix}\"
+							WHERE
+								winner in (\'${stringify}\') OR
+								loser in (\'${stringify}\')
+							GROUP BY
+								winner,
+								loser
+						`,
+						rowMode: "array",
+					};
+					break;
 			}
+			const res_nodes = await dbClient.query(query);
+			return Ts_matching_Ratings_Array(year_Int, res_nodes.rows);
+
 		} catch (err) {
 			console.error(err);
 		}
@@ -170,11 +226,11 @@ export class dataBase_methods {
 				SELECT 
 					SC_TB.schoolcode AS SC,
 					TG_TB.schoolcode AS TG
-				FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}" SC_TB
+				FROM public."QUERY_${year_Int}${postfix}" SC_TB
 				JOIN
 				(
 					SELECT *
-					FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
+					FROM public."QUERY_${year_Int}${postfix}"
 				) TG_TB
 				ON SC_TB.schoolname = TG_TB.schoolname
 				WHERE 
@@ -190,11 +246,11 @@ export class dataBase_methods {
 				SELECT 
 					SC_TB.deptcode AS \"SC\",
 					TG_TB.deptcode AS \"TG\"
-				FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}" SC_TB
+				FROM public."QUERY_${year_Int}${postfix}" SC_TB
 				JOIN
 				(
 					SELECT *
-					FROM public."QUERY_${year_TG_Int}${process.env.QUERY_POSTFIX || ""}"
+					FROM public."QUERY_${year_TG_Int}${postfix}"
 				) TG_TB
 				ON SC_TB.schoolcode = TG_TB.schoolcode
 				WHERE 
@@ -247,7 +303,7 @@ export class dataBase_methods {
 							AVG("r_score") AS "r_score",
 							AVG("shiftratio") AS "shiftratio",
 							AVG("avg") AS "AVG"
-						FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
+						FROM public."QUERY_${year_Int}${postfix}"
 						WHERE "schoolcode" in (
 							\'${res_nodes["nodes"].map((x) => x[0].slice(0, 3)).join("','")}\'
 						)
@@ -272,7 +328,7 @@ export class dataBase_methods {
 							"r_score",
 							"shiftratio",
 							"avg"
-						FROM public."QUERY_${year_Int}${process.env.QUERY_POSTFIX || ""}"
+						FROM public."QUERY_${year_Int}${postfix}"
 						WHERE "deptcode" in (
 							\'${res_nodes["nodes"].map((x) => x[0]).join("','")}\'
 						)
@@ -351,50 +407,18 @@ export class dataBase_methods {
 			console.error(err.message);
 		}
 	}
-	//- This only outputs arrays of "[winner<STRING>, loser<STRING>, isDraw<BOOL>]"
+	//- This only outputs arrays of "[winner<STRING>, loser<STRING>, isDraw<BOOL[]>]"
 	static async getAllMatches_FullDetail(year_Int = -1) {
 		const query = {
 			text: `
-			(
-				SELECT 
-					CAST (WINNER AS text),
-					CAST (LOSER AS text),
-					false AS isDraw
-				FROM
-				(
-					SELECT 
-						一 AS WINNER,
-						unnest(array[
-							二,
-							三,
-							四,
-							五,
-							六
-						]) AS LOSER
-					FROM public.admission_${year_Int}
-				)
-				WHERE 
-					LOSER IS NOT NULL
-			) UNION (
-				SELECT 
-					CAST (WINNER AS text),
-					CAST (LOSER AS text),
-					true AS isDraw
-				FROM
-				(
-					SELECT 
-						二 AS WINNER,
-						unnest(array[
-							三,
-							四,
-							五,
-							六
-						]) AS LOSER
-					FROM public.admission_${year_Int}
-				)
-				WHERE 
-					LOSER IS NOT NULL
-			)
+				SELECT
+					winner,
+					loser,
+					array_agg(isdraw)
+				FROM public."QUERY_${year_Int}_admission${postfix}"
+				GROUP BY
+					winner,
+					loser
 			`,
 			rowMode: "array",
 		};

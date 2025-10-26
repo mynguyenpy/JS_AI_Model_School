@@ -1,19 +1,17 @@
 import "dotenv/config";
 import Express from "express";
 import path from "path";
+import { initServerData } from "./functions/dataBase_Client.js";
 
 import API_router from "./functions/API_Routes.js";
-import { dataBase_methods } from "./functions/dataBase_Client.js";
 
 //- Print VERSION_TAG
 console.log(`- Product Version:\x1b[33m ${process.env.VERSION_TAG}\x1b[0m`);
 
-//- Initialization
-	//- Check table existence
-		await Promise.all([111, 112, 113].map((x) => dataBase_methods.initDatabase(x)));
+//- Init DataBase
+await initServerData([111, 112, 113]);
 
 const __dirname = process.cwd() + "/src/views";
-
 const app = Express();
 
 app.use("/api", API_router);
@@ -22,7 +20,6 @@ app.use(Express.static(path.join(__dirname, "public"))); // 👈#NOTE : 這會�
 //- set views
 app.set("view engine", process.env.VIEW_ENGINE);
 app.set("views", __dirname);
-
 //- Env port
 const port = parseInt(process.env.PORT || "3000");
 app.listen(port, () => {
