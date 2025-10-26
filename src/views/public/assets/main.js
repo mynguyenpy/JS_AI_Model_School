@@ -17,6 +17,7 @@ Chart.register(ChartDataLabels);
 let Cstatus = false;
 let SelectItem = null;
 let CompareJson = null;
+let SHname = null;
 // DOM 元素
 const searchBox = document.querySelector(".search-box");
 const universityList = document.getElementById("universityList");
@@ -531,6 +532,9 @@ function updateSelectedSchool(schoolElement) {
 		mode: "school",
 		fullText: `${school.name} (${currentYear}年)`,
 	};
+
+	SHname =[`${school.name}`];
+
 	if (!CompareJson) CompareJson = selectedUniversity;
 	if (Cstatus) {
 		Compare(selectedUniversity);
@@ -595,6 +599,8 @@ function updateSelectedDepartment(departmentElement) {
 			fullText: `${school.name} - ${deptName} (${currentYear}年)`,
 		};
 
+		SHname =[`${school.name}`,`${deptName}`];
+
 		selectedTitle.textContent = `${school.name} - ${deptName}`;
 		selectedInfo.innerHTML = `
             學校代碼: ${schoolCode} | 科系代碼: ${deptCodes.join(
@@ -622,6 +628,8 @@ function updateSelectedDepartment(departmentElement) {
 			mode: "group",
 			fullText: `${school.name} - ${dept.name} (${currentYear}年)`,
 		};
+
+		SHname =[`${school.name}`,`${dept.name} ${categories}${simplifyCategory(categories)}`];
 
 		selectedTitle.textContent = `${school.name} - ${dept.name}`;
 		selectedInfo.innerHTML = `
@@ -920,7 +928,8 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 		result[1] = `${deptname} ${category}${simplifyCategory(category)}`;
 		return result.slice(0,2);
 	});
-
+	const selectedLabel = Array.isArray(SHname) ? SHname.join(" ").toLowerCase() : (SHname || "").toString().toLowerCase();
+	console.log(selectedLabel)
 	safeDraw(containerId, {
 		type: "bar",
 		data: {
@@ -954,7 +963,12 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 			},
 			scales:{
 				x:{ticks:{autoskip:false,fontSize:6,minRotation:0,maxRotation:0,
-					color:(ctx) => ctx.index === 0 ? 'red' : 'black',
+					color: (ctx) => {
+                        if (!selectedLabel) return "black";
+                        const lab = labels[ctx.index];
+                        const labStr = Array.isArray(lab) ? lab.join(" ").toLowerCase() : String(lab).toLowerCase();
+                        return labStr.includes(selectedLabel) ? "red" : "black";
+                    },
 					callback: function(value,index,ticks) {
 					const words = String(this.getLabelForValue(value)).split('');
 					words.forEach(i =>{i===','?words[words.indexOf(i)]=' ':i,i==='（' || i==='）'?words.splice(words.indexOf(i),1):i});
@@ -980,6 +994,8 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 		CalcRanks(rValues),
 		CalcRanks(avgValues)
 	];
+	const selectedLabel = Array.isArray(SHname) ? SHname.join(" ").toLowerCase() : (SHname || "").toString().toLowerCase();
+
 	safeDraw(containerId, {
 		type: "bar",
 		data: {
@@ -1036,10 +1052,14 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 			},
 			scales: {
 				x:{ticks:{autoskip:false,maxRotation:0,minRotation:0,fontSize:6,
-					color:(ctx) => ctx.index === 0 ? 'red' : 'black',
+					color: (ctx) => {
+                        if (!selectedLabel) return "black";
+                        const lab = labels[ctx.index];
+                        const labStr = Array.isArray(lab) ? lab.join(" ").toLowerCase() : String(lab).toLowerCase();
+                        return labStr.includes(selectedLabel) ? "red" : "black";
+                    },
 					callback: function(value,index,ticks) {
 					const words = String(this.getLabelForValue(value)).split('');
-					console.log(words);
 					words.forEach(i =>{i===','?words[words.indexOf(i)]=' ':i,i==='（' || i==='）'?words.splice(words.indexOf(i),1):i});
 					return words;
 				}}},
