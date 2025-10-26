@@ -1,5 +1,4 @@
 import { Pool } from "pg";
-import SchoolQueue from "../objects/schoolQueue.js";
 import { QueryViews, QueryAdmissionViews } from "./DB/createDBViews.js";
 import {
 	Ts_matching_Ratings_Array,
@@ -27,8 +26,15 @@ if (!dbClient) {
 		port: process.env.DB_PORT,
 	});
 
+	//- Initialization
 	try {
 		dbClient = await pool.connect();
+
+		//- Check table existence
+		pool.on('connect', async (client) => {
+			
+		})
+
 		console.log("\x1b[42mDatabase Connected.\x1b[0m \n");
 	} catch (error) {
 		//- The error is "AggregateError"
@@ -38,45 +44,12 @@ if (!dbClient) {
 		});
 	}
 }
+
+//-Exports
 export default dbClient;
-
-//- #NOTE :  DEPRECATED
-/* function getPrompt(year = "0", post = "") {
-	return `
-    SELECT 
-      "校系代碼" as id,
-      "學校" as name,
-      "正備取有效性" as posvalid
-    FROM public."Data_${year}"
-    where "正備取有效性" != 0 ${post}
-  `;
-export class SchoolDB_Client {
-	SchoolQueue = new SchoolQueue();
-
-	//- Get DB school
-	getAnalyzeSchools(year = "") {
-		const query = getPrompt(year, "LIMIT 50");
-
-		return new Promise((resolve, reject) => {
-			dbClient
-				.query(query)
-				.then((_res) => {
-					//- Add to school
-					_res.rows.forEach((obj) => {
-						if (obj) {
-							this.SchoolQueue.AddSchool(obj);
-						}
-						resolve(this.SchoolQueue);
-					});
-				})
-				.catch((err) => {
-					console.error(err.message);
-					reject(err.message);
-				});
-		});
-	}
-} */
-
+export function initServerData(years = []) {
+	return Promise.all(years.map((x) => dataBase_methods.initDatabase(x)));
+};
 export class dataBase_methods {
 	static async initDatabase(year = 111) {
 		
