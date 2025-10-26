@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import SchoolQueue from "../objects/schoolQueue.js";
-import { QueryViews } from "./DB/createDBViews.js";
+import { QueryViews, QueryAdmissionViews } from "./DB/createDBViews.js";
 import {
 	Ts_matching_Ratings_Array,
 } from "./ts_validation.js";
@@ -78,7 +78,18 @@ export class SchoolDB_Client {
 
 export class dataBase_methods {
 	static async initDatabase(year = 111) {
-		const query_TableName = `QUERY_${year}${process.env.QUERY_POSTFIX || ""}`;
+		
+		return [
+			this.initCreateDatabase(year),
+			this.initCreateDatabase(year, "admission")
+		];
+	}
+	static async initCreateDatabase(year = 111, TableName = "") {
+		const postfix = process.env.QUERY_POSTFIX || "";
+		const query_TableName = `QUERY_${year}${
+			(TableName !== "" ? "_" : "") + TableName
+		}${postfix}`;
+
 		const query = {
 			text: `
         SELECT 
@@ -89,13 +100,26 @@ export class dataBase_methods {
 			rowMode: "array",
 		};
 
-		console.log(`📄 \x1b[33m- Checking ${query_TableName} Tables.\x1b[0m`);
+		console.log(`📄 \x1b[33m- Checking \"${query_TableName}\" Tables.\x1b[0m`);
 
 		//- Check table exist
 		try {
 			let res = await dbClient.query(query);
 
-			if (res.rows[0] != 1) await Promise.all([QueryViews(year)]);
+			if (res.rows[0] != 1) {
+				switch (TableName) {
+					case "admission":
+						await QueryAdmissionViews(year, query_TableName);
+						break;
+				
+					default:
+						await QueryViews(year, query_TableName);
+						break;
+				};
+				console.log(
+					`  ✅\x1b[32m-- Successfully create \"${query_TableName}\" view.👁️\x1b[0m`
+				);
+			};
 		} catch (err) {
 			console.error(err);
 		} finally {

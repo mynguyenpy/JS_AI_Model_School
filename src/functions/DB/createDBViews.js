@@ -2,8 +2,7 @@ import dbClient from "../dataBase_Client.js";
 import { Ts_data } from "../ts_validation.js";
 
 //- Prefix "Data_" => 甄選
-async function createDataView(year) {
-  const query_TableName = `QUERY_${year}${process.env.QUERY_POSTFIX || ""}`;
+async function createDataView(year, query_TableName) {
   const query = {
 		text: `
       SELECT 
@@ -92,7 +91,7 @@ async function createDataView(year) {
 	};
   
 	const create = {
-		name: `create-QUERY_${year}_VIEW_Table`,
+    name: `create-${query_TableName}_VIEW_Table`,
 		text: `
       CREATE MATERIALIZED VIEW "${query_TableName}" AS
         ${query.text}
@@ -153,10 +152,64 @@ async function createDataView(year) {
 
 	//- create view table
 	await dbClient.query(create);
+}
 
-	console.log(
-		`  ✅\x1b[32m-- Successfully create \"QUERY_${year}${process.env.QUERY_POSTFIX || ""}\" view.👁️\x1b[0m`
-	);
+//- Prefix "QUERY_Admission_" => 甄選選擇
+async function createAdmissionView(year, query_TableName) {
+  const query = {
+    text: `
+      (
+				SELECT
+					CAST (WINNER AS text),
+					CAST (LOSER AS text),
+					false AS isDraw
+				FROM
+				(
+					SELECT
+						一 AS WINNER,
+						unnest(array[
+							二,
+							三,
+							四,
+							五,
+							六
+						]) AS LOSER
+					FROM public.admission_${year}
+				)
+				WHERE 
+					LOSER IS NOT NULL
+			) UNION (
+				SELECT 
+					CAST (WINNER AS text),
+					CAST (LOSER AS text),
+					true AS isDraw
+				FROM
+				(
+					SELECT 
+						二 AS WINNER,
+						unnest(array[
+							三,
+							四,
+							五,
+							六
+						]) AS LOSER
+					FROM public.admission_${year}
+				)
+				WHERE 
+					LOSER IS NOT NULL
+			)
+    `,
+  };
+  const create = {
+    name: `create-${query_TableName}_VIEW_Table`,
+    text: `
+      CREATE MATERIALIZED VIEW "${query_TableName}" AS
+        ${query.text}
+    `,
+  };
+
+  //- create view table
+  await dbClient.query(create);
 }
 
 //- Prefix "Data_Distr_" => 登記分發 #NOTE : Pending
@@ -205,6 +258,10 @@ async function createDistrView(year) {
 	);
 }
 
-export function QueryViews(year) {
-	return createDataView(year);
+export function QueryViews(year, query_TableName) {
+  return createDataView(year, query_TableName);
+}
+
+export function QueryAdmissionViews(year, query_TableName) {
+  return createAdmissionView(year, query_TableName);
 }
