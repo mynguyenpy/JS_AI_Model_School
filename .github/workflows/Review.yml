@@ -25,14 +25,16 @@ jobs:
           tags: tag:ci
       
       - 
-        name: Run Ollama Code Review
-        uses: ray5273/ollama-pr-review-action@v1.0.0
+        name: Checkout repository and submodules
+        uses: actions/checkout@v5 # To clone the repository
         with:
-          OLLAMA_API_URL: ${{ secrets.OLLAMA_ADDRESS }} # Local Ollama server
-          MY_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          RESPONSE_LANGUAGE: '台灣繁體中文zh-TW'
-          MODEL: ${{ secrets.OLLAMA_MODEL }}
-          TRANSLATION_MODEL: ${{ secrets.OLLAMA_MODEL_GENERAL }}
+          submodules: true
+      - 
+        name: Run Ollama Code Review
+        uses: ./review_bot
+        with:
+          OLLAMA-ADDRESS: ${{ secrets.OLLAMA_ADDRESS }} # Local Ollama server
+          file-pattern: "**/*.{js}"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-branch: "origin/main"
+          model: ${{ secrets.OLLAMA_MODEL }}
