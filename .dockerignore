@@ -8,6 +8,7 @@
 **/.dockerignore
 **/.env
 **/.git
+**/.github
 **/.gitignore
 **/.project
 **/.settings
@@ -20,6 +21,7 @@
 **/*.dbmdl
 **/*.jfm
 **/charts
+**/review_bot
 **/docker-compose*
 **/compose.y*ml
 **/Dockerfile*
@@ -33,5 +35,6 @@
 **/data
 *.tar
 *.sql
+
 LICENSE
 README.md
