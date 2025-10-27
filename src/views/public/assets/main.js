@@ -640,7 +640,7 @@ function updateSelectedDepartment(departmentElement) {
 			fullText: `${school.name} - ${dept.name} (${currentYear}年)`,
 		};
 
-		SHname =[`${school.name}`,`${dept.name} ${categories}${simplifyCategory(categories)}`];
+		SHname =[`${school.name}`,`${dept.name} - ${categories}${simplifyCategory(categories)}`];
 
 		selectedTitle.textContent = `${school.name} - ${dept.name}`;
 		selectedInfo.innerHTML = `
