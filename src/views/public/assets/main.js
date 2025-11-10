@@ -965,15 +965,13 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 			switch(containerId){
 				case "chart-line-1":
 					selectkey="admissionnumber";
-					console.log("選擇的key",selectkey);
 					break;
 				case "chart-line-3":
 					selectkey="admissionvacancies";
-					console.log("選擇的key",selectkey);
 					break;
 				case "chart-line-4":
-					selectkey="admissionvalidity";	
-					console.log("選擇的key",selectkey);
+					selectkey="acceptancenumber";	
+					// AcceptanceNumber
 					break;
 			}
 			const result = dataParserN(d, ["schoolname", "schoolcode",selectkey]);
@@ -983,15 +981,13 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 			switch(containerId){
 				case "chart-line-1":
 					selectkey="admissionnumber";
-					console.log("選擇的key",selectkey);
 					break;
 				case "chart-line-3":
 					selectkey="admissionvacancies";
-					console.log("選擇的key",selectkey);
 					break;
 				case "chart-line-4":
-					selectkey="admissionvalidity";	
-					console.log("選擇的key",selectkey);
+					selectkey="acceptancenumber";	
+					// AcceptanceNumber
 					break;
 			}
 			//- rest of the format
@@ -1046,8 +1042,7 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 					formatter: function (value, ctx) {
 						const index = ctx.dataIndex;
 						const count = CountData[index];
-						if(containerId==="chart-line-4")return `${count}\n${value.toFixed(2)}`; // 小數點兩位
-						return `${count}人\n${value.toFixed(2)}`;
+						return `${count}人\n${value.toFixed(2)}`; // 小數點兩位
 						
 					},
 					font: { size: 10 },
