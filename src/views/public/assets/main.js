@@ -100,6 +100,14 @@ function dataParser(searchDept, joinElements = ["schoolname"]) {
 	return joinElements.map((x) => searched[x]);
 }
 
+function dataParserN(searchDept, joinElements = ["schoolname"]) {
+	const searched = currentDisplayMode === "school"?
+		originalUniversityData.find((x) => x.schoolcode === searchDept) :  //- search for school
+		originalUniversityData.find((x) => x.deptcode === searchDept);
+
+	return joinElements.map((x) => searched[x]);
+}
+
 function localizeDept(searchDept, joinElements = ["schoolname"], split = "/") {
 	return dataParser(searchDept, joinElements).join(split);
 }
@@ -950,13 +958,54 @@ function safeDraw(containerId, chartConfig) {
 }
 function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 	nodes = nodes.map((x) => x[0]);
+	let selectkey="";
+	const CountData = nodes.map((d) => { //- Formatting labels
+		//- Separate format for "school"
+		if (currentDisplayMode === "school") {
+			switch(containerId){
+				case "chart-line-1":
+					selectkey="admissionnumber";
+					console.log("選擇的key",selectkey);
+					break;
+				case "chart-line-3":
+					selectkey="admissionvacancies";
+					console.log("選擇的key",selectkey);
+					break;
+				case "chart-line-4":
+					selectkey="admissionvalidity";	
+					console.log("選擇的key",selectkey);
+					break;
+			}
+			const result = dataParserN(d, ["schoolname", "schoolcode",selectkey]);
+			
+			return result[2];
+		} else {
+			switch(containerId){
+				case "chart-line-1":
+					selectkey="admissionnumber";
+					console.log("選擇的key",selectkey);
+					break;
+				case "chart-line-3":
+					selectkey="admissionvacancies";
+					console.log("選擇的key",selectkey);
+					break;
+				case "chart-line-4":
+					selectkey="admissionvalidity";	
+					console.log("選擇的key",selectkey);
+					break;
+			}
+			//- rest of the format
+			const result = dataParserN(d, ["schoolname", selectkey]);
+	
+			return result[1];
+		}
+	});
 	const values = nodes.map((d) => parseFloat(localizeDept(d, [dataKey])));
 	const labels = nodes.map((d) => { //- Formatting labels
-
 		//- Separate format for "school"
 		if (currentDisplayMode === "school") {
 			const [schoolname, schoolcode] = dataParser(d, ["schoolname", "schoolcode"]);
-
+			
 			return `${schoolcode} - ${schoolname}`;
 		} else {
 			
@@ -994,8 +1043,10 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 				datalabels: {
 					color: "#000",
 					align: "top",
-					formatter: function (value) {
-						return `${value.toFixed(2)}`; // 小數點兩位
+					formatter: function (value, ctx) {
+						const index = ctx.dataIndex;
+						const count = CountData[index];
+						return `${count}人\n${value.toFixed(2)}`; // 小數點兩位
 					},
 					font: { size: 10 },
 				},
