@@ -1,5 +1,6 @@
 import dbClient from "../DB/dataBase_Client.js";
-import { Ts_data } from "../ts_validation.js";
+import { Ts_data, Ts_matching_Ratings_Array } from "../ts_validation.js";
+const postfix = process.env.QUERY_POSTFIX || "";
 
 //- Prefix "Data_" => 甄選
 async function createDataView(year, query_TableName) {
@@ -56,7 +57,7 @@ async function createDataView(year, query_TableName) {
         
         MIN("avg") AS "avg"
       FROM 
-        public."QUERY_${year}_init${process.env.QUERY_POSTFIX || ""}"
+        public."QUERY_${year}_init${postfix}"
     GROUP BY 
       schoolCode,
       schoolName,
@@ -281,6 +282,129 @@ async function createAdmissionView(year, query_TableName) {
   //- create view table
   await dbClient.query(create);
 }
+async function createCompetitionViews_School(year, query_TableName) {
+  const query = {
+    text: `
+      SELECT
+        winner,
+        loser,
+        array_agg(isdraw) AS results,
+        COUNT(*)
+      FROM (
+        SELECT
+          SUBSTRING(winner,1,3) AS winner,
+          SUBSTRING(loser,1,3) AS loser,
+          isdraw
+        FROM public."QUERY_${year}_admission${postfix}"
+      )
+      WHERE
+        (winner != loser)
+      GROUP BY
+        winner,
+        loser
+    `,
+    rowMode: "array",
+  };
+  const query_data = await dbClient.query(query);
+  const TS = await Ts_matching_Ratings_Array(year, query_data.rows);
+  const R_scores = TS.nodes.map(([schoolCode, score]) => `(${schoolCode}, ${score})`)
+    .join(",");
+
+  const create = {
+    name: `create-${query_TableName}_VIEW_Table`,
+    text: `
+      CREATE MATERIALIZED VIEW "${query_TableName}" AS
+        SELECT 
+          cast ("schoolcode" AS text),
+          cast ("r_score" AS text)
+        FROM (VALUES
+          ${R_scores}
+        ) AS new_data(schoolcode, r_score)
+    `,
+  };
+
+  //- create view table
+  await dbClient.query(create);
+}
+async function createCompetitionViews_Group(year, query_TableName) {
+  const query = {
+    text: `
+      SELECT
+        FORMAT('%s-%s', SC.schoolcode, SC.deptname) AS winner,
+        FORMAT('%s-%s', SC2.schoolcode, SC2.deptname) AS loser,
+        TG.results,
+        TG.relationCount
+      FROM (
+      (
+        SELECT
+          winner,
+          loser,
+          array_agg(isdraw) AS results,
+          COUNT (*) AS relationCount
+        FROM (
+          SELECT *
+          FROM public."QUERY_${year}_admission${postfix}"
+        )
+        WHERE
+          (winner != loser)
+        GROUP BY
+          winner,
+          loser
+      ) TG
+      JOIN
+        (
+          SELECT
+            schoolcode,
+            deptname,
+            array_agg(deptcode) AS deptcodes
+          FROM
+            public."QUERY_${year}${postfix}"
+          GROUP BY
+            schoolcode,
+            deptname
+        ) SC
+        ON
+          TG.winner = ANY(SC.deptcodes)
+      JOIN
+        (
+          SELECT
+            schoolcode,
+            deptname,
+            array_agg(deptcode) AS deptcodes
+          FROM
+            public."QUERY_${year}${postfix}"
+          GROUP BY
+            schoolcode,
+            deptname
+        ) SC2
+        ON
+          TG.loser = ANY(SC2.deptcodes)
+      );
+    `,
+    rowMode: "array",
+  };
+
+  const query_data = await dbClient.query(query);
+  const TS = await Ts_matching_Ratings_Array(year, query_data.rows);
+  const R_scores = TS.nodes.map(([schoolCode, score]) => `(\'${schoolCode}\', ${score})`)
+    .join(",");
+
+  const create = {
+    name: `create-${query_TableName}_VIEW_Table`,
+    text: `
+      CREATE MATERIALIZED VIEW "${query_TableName}" AS
+        SELECT
+          cast ("schoolcode" AS text),
+          cast ("r_score" AS text)
+        FROM (VALUES
+          ${R_scores}
+        ) AS new_data(schoolcode, r_score)
+    `,
+  };
+
+  //- create view table
+  await dbClient.query(create);
+}
 
 //- Prefix "Data_Distr_" => 登記分發 #NOTE : Pending
 async function createDistrView(year) {
@@ -328,6 +452,9 @@ async function createDistrView(year) {
 	);
 }
 
+export function QueryInitViews(year, query_TableName) {
+  return createInitView(year, query_TableName);
+}
 export function QueryViews(year, query_TableName) {
   return createDataView(year, query_TableName);
 }
@@ -335,6 +462,9 @@ export function QueryViews(year, query_TableName) {
 export function QueryAdmissionViews(year, query_TableName) {
   return createAdmissionView(year, query_TableName);
 }
-export function QueryInitViews(year, query_TableName) {
-  return createInitView(year, query_TableName);
+export function QueryCompetitionViews_School(year, query_TableName) {
+  return createCompetitionViews_School(year, query_TableName);
+}
+export function QueryCompetitionViews_Group(year, query_TableName) {
+  return createCompetitionViews_Group(year, query_TableName);
 }

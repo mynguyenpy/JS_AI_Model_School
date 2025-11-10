@@ -1,7 +1,14 @@
 import { Pool } from "pg";
-import { QueryViews, QueryAdmissionViews, QueryInitViews } from "./createDBViews.js";
+import {
+	QueryViews,
+	QueryAdmissionViews,
+	QueryInitViews,
+	QueryCompetitionViews_School,
+	QueryCompetitionViews_Group
+} from "./createDBViews.js";
 import {
 	Ts_matching_Ratings_Array,
+	Ts_matching_Ratings_Query
 } from "../ts_validation.js";
 
 //- Make sure DB is connected
@@ -53,7 +60,13 @@ export function initServerData(years = []) {
 export class dataBase_methods {
 	static async initDatabase(year = 111) {
 		
-		const INIT_List = ["init", "admission", ""];
+		const INIT_List = [
+			"init",
+			"admission",
+			"competition_school",
+			"competition_department",
+			""
+		];
 
 		//- #NOTE : Asynchronous matters, tables are dependence
 		INIT_List.forEach(async (x) => 
@@ -83,11 +96,17 @@ export class dataBase_methods {
 
 			if (res.rows[0] != 1) {
 				switch (TableName) {
+					case "init": //- Initial computation Data
+						await QueryInitViews(year, query_TableName);
+						break;
 					case "admission":
 						await QueryAdmissionViews(year, query_TableName);
 						break;
-					case "init": //- Initial computation Data
-						await QueryInitViews(year, query_TableName);
+					case "competition_school": //- R-scores for schools
+						await QueryCompetitionViews_School(year, query_TableName);
+						break;
+					case "competition_department": //- R-scores for group
+						await QueryCompetitionViews_Group(year, query_TableName);
 						break;
 				
 					default:
@@ -148,7 +167,7 @@ export class dataBase_methods {
 		}
 	}
 
-	static async getRelationData(bodyData) {
+	static async getRelationData_Local(bodyData) {
 		const { year = "", mode, departmentCodes, universityCode } = bodyData;
 		const year_Int = parseInt(year);
 
@@ -208,6 +227,79 @@ export class dataBase_methods {
 			const res_nodes = await dbClient.query(query);
 			return Ts_matching_Ratings_Array(year_Int, res_nodes.rows);
 
+		} catch (err) {
+			console.error(err);
+		}
+	}
+	static async getRelationData(bodyData) {
+		const { year = "", mode, departmentCodes, universityCode } = bodyData;
+		const year_Int = parseInt(year);
+
+		let query;
+		try {
+			switch (mode) {
+				case "school":
+					//- getAllRelations for each department
+					query = {
+						text: `
+							SELECT *
+							FROM public.\"QUERY_${year_Int}_competition_${mode}${postfix}\"
+						`,
+						rowMode: "array",
+					};
+					break;
+				
+				case "department":
+					query = {
+						text: `
+						SELECT
+							winner,
+							loser,
+							array_agg(isdraw) AS results,
+							COUNT(*) AS relationCount
+						FROM (
+							SELECT
+								SUBSTRING(winner,1,3) AS winner,
+								SUBSTRING(loser,1,3) AS loser,
+								isdraw
+							FROM public.\"QUERY_${year_Int}_admission${postfix}\"
+							WHERE
+								winner LIKE '${universityCode}%' OR
+								loser LIKE '${universityCode}%'
+						)
+						WHERE
+							(winner != loser) 
+						GROUP BY
+							winner,
+							loser
+						`,
+						rowMode: "array",
+					};
+					break;
+				
+				default:
+					let stringify = departmentCodes.join("','");
+					query = {
+						text: `
+							SELECT
+								winner,
+								loser,
+								array_agg(isdraw),
+								COUNT (*) AS relationCount
+							FROM public.\"QUERY_${year_Int}_admission${postfix}\"
+							WHERE
+								winner in (\'${stringify}\') OR
+								loser in (\'${stringify}\')
+							GROUP BY
+								winner,
+								loser
+						`,
+						rowMode: "array",
+					};
+					break;
+			}
+			const res_nodes = await dbClient.query(query);
+			return Ts_matching_Ratings_Query(year_Int, res_nodes.rows, mode);
 		} catch (err) {
 			console.error(err);
 		}
@@ -437,4 +529,21 @@ export class dataBase_methods {
 			console.error(err.message);
 		}
 	}
+	//- This only outputs arrays of "[winner<STRING>, loser<STRING>, isDraw<BOOL[]>]"
+	/* static async getAllMatches_School(year_Int = -1) {
+		const query = {
+			text: `
+				SELECT *
+				FROM public."QUERY_${year_Int}_competition_school${postfix}"
+			`,
+			rowMode: "array",
+		};
+
+		try {
+			let res = await dbClient.query(query);
+			return res.rows;
+		} catch (err) {
+			console.error(err.message);
+		}
+	} */
 }
