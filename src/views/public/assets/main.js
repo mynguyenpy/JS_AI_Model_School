@@ -1118,7 +1118,7 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 			plugins: {
 				title: {
 					display: true,
-					text: `${currentYear}年 R-score - 登記入學平均分數`,
+					text: `${currentYear}年 R-score - 最低平均分數`,
 				},
 				datalabels: {
 					color: (ctx) => {
@@ -1195,8 +1195,9 @@ function CalcRanks(values){
 }
 
 function iLB() {
-	const containers = document.querySelectorAll(".image-container.medium");
+	const containers = document.querySelectorAll(".image-container");
 	const lightbox = document.getElementById("lightbox");
+	const RDnetwork = document.getElementById("network-container");
 	const LBcontent = document.getElementById("lightbox-content");
 	const MC = document.querySelector(".main-content");
 	let ACTcontainer = null;
@@ -1213,7 +1214,9 @@ function iLB() {
 				nS = container.nextSibling;
 				container.parentNode.insertBefore(dummy, nS);
 				lightbox.style.display = "block";
+				container.style.height = "100%";
 				LBcontent.innerHTML = "";
+				RDnetwork.style.height = "100%";
 				LBcontent.appendChild(container);
 			}
 		});
@@ -1221,6 +1224,8 @@ function iLB() {
 	lightbox.addEventListener("click", function (e) {
 		if (e.target == lightbox) {
 			dummy.style.display = "none";
+			RDnetwork.style.height = "85%";
+			ACTcontainer.style.height = "320px";
 			MC.insertBefore(ACTcontainer, dummy);
 			lightbox.style.display = "none";
 			LBcontent.innerHTML = "";
