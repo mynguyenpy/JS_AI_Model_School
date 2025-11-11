@@ -208,8 +208,8 @@ async function createDataView_Department(year, query_TableName) {
             schoolCode,
             schoolName,
             deptname,
-            array_agg(deptcode) AS deptcodes,
-            array_agg(category) AS categories,
+            array_agg(DISTINCT deptcode) AS deptcodes,
+            array_agg(DISTINCT category) AS categories,
 
             SUM(AdmissionVacancies) AS AdmissionVacancies,
 
