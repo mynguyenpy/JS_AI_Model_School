@@ -84,11 +84,10 @@ async function createDataView(year, query_TableName) {
 
 	//- #NOTE : Update R-score to DB
 	let R_scores = query_data.rows
-		.map((x) => {
+    .flatMap((x) => {
 			const { deptcode } = x;
 			return `(${deptcode}, ${ts_data.R_score(deptcode)})`;
 		})
-		.flat()
 		.join(",");
 
 	const insert_R = {
