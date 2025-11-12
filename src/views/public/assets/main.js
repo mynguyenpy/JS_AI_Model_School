@@ -96,15 +96,16 @@ function parseSchoolData(schoolData) {
 
 function dataParser(searchDept, joinElements = ["schoolname"]) {
 	const searched = currentDisplayMode === "school"?
-		originalUniversitySumData.find((x) => x.schoolcode === searchDept) :  //- search for school
+		originalUniversitySumData.find((x) => x.schoolcode === searchDept ) : //- search for school
+		currentDisplayMode === "department" ? originalUniversityDepartmentData.find((x) => x.schoolcode === searchDept[0] && x.deptname === searchDept[1]) :  
 		originalUniversityData.find((x) => x.deptcode === searchDept);
-
 	return joinElements.map((x) => searched[x]);
 }
 
 function localizeDept(searchDept, joinElements = ["schoolname"], split = "/") {
 	return dataParser(searchDept, joinElements).join(split);
 }
+
 
 // 簡化群別名稱
 function simplifyCategory(category) {
@@ -559,9 +560,8 @@ function updateSelectedSchool(schoolElement) {
 		})
 			.then((res) => res.json())
 			.then((json) => {
-				console.log(json);
+				//console.log(json);
 				const { nodes, edges } = json;
-
 				drawLineChart("chart-line-1", nodes, "錄取率", "admissionrate");
 				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
 				drawLineChart(
@@ -679,8 +679,10 @@ function updateSelectedDepartment(departmentElement) {
 		})
 			.then((res) => res.json())
 			.then((json) => {
-				console.log(json);
+				//console.log(json);
 				const { nodes, edges } = json;
+
+				if(currentDisplayMode==="department"){nodes.map((x)=>{x[0]=x[0].split('-')})}
 
 				drawLineChart("chart-line-1", nodes, "錄取率", "admissionrate");
 				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
@@ -865,7 +867,18 @@ window.switchToDisplayMode = function (mode) {
 function renderNetwork(nodes, edges) {
 	const placeholder = document.querySelector(".placeholder-text");
 	if (placeholder) placeholder.style.display = "block";
-
+	if (currentDisplayMode === "department"){
+		const merged={};
+		edges.forEach(([A,b,num])=>{
+			const key = `${A}-${b}`;
+			const NumberN = Number(num)
+			if(!merged[key]){
+				merged[key]=[A,b,NumberN];
+			}else{merged[key][2]+=NumberN}
+		})
+		edges = Object.values(merged);
+		nodes.map((N)=>{N[0]=N[0].join('-')})
+	}
 	const edgeCountMap = edges.map(([source, target, relationCount])=>{
 		return {
 			data: {
@@ -875,7 +888,6 @@ function renderNetwork(nodes, edges) {
 			}
 		};
 	});
-
 	cytoscape({
 		container: document.getElementById("network-container"),
 		elements: [
@@ -884,13 +896,13 @@ function renderNetwork(nodes, edges) {
 					id: n[0],
 					label:
 						currentDisplayMode === "school" ?
-							`${localizeDept(n[0], ["schoolname"])} ${n[1]}` :
+							`${localizeDept(n[0], ["schoolname"])} ${n[1]}` : currentDisplayMode === "department" ? 
+							`${localizeDept(n[0].split('-'), ["schoolcode","schoolname","deptname"])} ${n[1]}` :
 							`${localizeDept(n[0], ["deptcode", "schoolname", "deptname"])} ${n[1]}`
 				},
 			})),
 			...edgeCountMap,
 		],
-
 		layout: {
 			name: "cose",
 			idealEdgeLength: 160, // 適中邊長，避免節點擠在一起
@@ -951,6 +963,7 @@ function safeDraw(containerId, chartConfig) {
 	chartInstances[containerId] = new Chart(ctx, chartConfig);
 }
 function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
+	
 	nodes = nodes.map((x) => x[0]);
 	let selectkey="";
 	const CountData = nodes.map((d) => { //- Formatting labels
@@ -969,7 +982,7 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 					break;
 			}
 			const result = dataParser(d, ["schoolname", "schoolcode",selectkey]);
-			
+
 			return result[2];
 		} else {
 			switch(containerId){
@@ -986,11 +999,13 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 			}
 			//- rest of the format
 			const result = dataParser(d, ["schoolname", selectkey]);
-	
+			
 			return result[1];
 		}
 	});
-	const values = nodes.map((d) => parseFloat(localizeDept(d, [dataKey])));
+	const values = nodes.map((d) => {
+		return parseFloat(localizeDept(d, [dataKey]));
+	});
 	const labels = nodes.map((d) => { //- Formatting labels
 		//- Separate format for "school"
 		if (currentDisplayMode === "school") {
@@ -1001,14 +1016,18 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 			
 			//- rest of the format
 			const result = dataParser(d, ["schoolname", "deptname", "category"]);
-			const [, deptname, category] = result;
-	
-			result[1] = `${deptname} - ${category}${simplifyCategory(category)}`;
+			if(currentDisplayMode==="department"){
+				const [, deptname] = result;
+			}
+			else{
+				const [, deptname, category] = result;
+				result[1] = `${deptname} - ${category}${simplifyCategory(category)}`;
+			}
 			return result.slice(0, 2);
 		}
 	});
 	const selectedLabel = Array.isArray(SHname) ? SHname.join(" ").toLowerCase() : (SHname || "").toString().toLowerCase();
-	console.log(selectedLabel)
+
 	safeDraw(containerId, {
 		type: "bar",
 		data: {
@@ -1063,6 +1082,7 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 	const labels = nodes.map((d) => { //- Formatting labels
 		//- Separate format for "school"
+		//if(currentDisplayMode==="department"){d[0]=d[0].slice(0,3)};
 		if (currentDisplayMode === "school") {
 			const result = dataParser(d[0], ["schoolname", "schoolcode"]);
 			const [schoolname, schoolcode] = result;
@@ -1072,16 +1092,20 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 
 			//- rest of the format
 			const result = dataParser(d[0], ["schoolname", "deptname", "category"]);
-			const [, deptname, category] = result;
-
-			result[1] = `${deptname} - ${category}${simplifyCategory(category)}`;
+			if(currentDisplayMode==="department"){
+				const [, deptname] = result;
+			}
+			else{
+				const [, deptname, category] = result;
+				result[1] = `${deptname} - ${category}${simplifyCategory(category)}`;
+			}
 			return result.slice(0, 2);
 		}
 	});
 	const rValues = nodes.map((d) => d[1]);
-	const avgValues = nodes.map((d) =>
-		parseFloat(localizeDept(d[0], [avgKey])).toFixed(2)
-	);
+	const avgValues = nodes.map((d) => {
+		return parseFloat(localizeDept(d[0], [avgKey])).toFixed(2);
+	});
 	const ranks =[
 		CalcRanks(rValues),
 		CalcRanks(avgValues)
@@ -1262,17 +1286,20 @@ async function Compare(CurrentJson) {
 
 	//- Request Data
 	const compareData = await loadCdata(CompareJson);
-
 	tableBody.innerHTML = ""; //- Clear TableBody
-
+	
 	const arrays = [compareData.source.flat(), compareData.target.flat()];
 	const lookups = arrays.map((item) => {
 		let obj = {};
 		item.forEach(({ schoolcode, deptname, category, r_score }) => {
+
 			//- #NOTE - Checking "school" mode
 			if (currentDisplayMode === "school") return (obj[schoolcode] = r_score);
 
-			const key = `${schoolcode}/${deptname}/${category}`;
+			let category_Str = category.split(',').map((x) => `${x}${simplifyCategory(x)}`);
+			category_Str = `[${category_Str.join(', ') }]`;
+
+			const key = [schoolcode, deptname, category_Str].join('/');
 			obj[key] = r_score;
 		});
 		return obj;
@@ -1282,16 +1309,17 @@ async function Compare(CurrentJson) {
 	arrays.forEach((item) => {
 		return item.forEach(
 			({ schoolcode, schoolname, deptname, category }) => {
-
+				
 				//- Labels for "school" mode
 				if (currentDisplayMode === "school")
 					return (Labels[schoolcode] = schoolname);
+				
+				let category_Str = category.split(',').map((x) => `${x}${simplifyCategory(x)}`);
+				category_Str = `[${category_Str.join(', ')}]`;
 
 				//- Detail labels by default
-				const key = `${schoolcode}/${deptname}/${category}`;
-				Labels[key] = `${schoolname} ${deptname} [${category}${simplifyCategory(
-					category
-				)}]`;
+				const key = [schoolcode, deptname, category_Str].join('/');
+				Labels[key] = `${schoolname} ${deptname} ${category_Str}`;
 			}
 		);
 	});
