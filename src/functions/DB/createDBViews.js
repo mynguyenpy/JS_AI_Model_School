@@ -292,7 +292,7 @@ async function createDataView_Department(year, query_TableName) {
             SELECT
               deptcodes,
               "avg"
-            FROM Public."QUERY_${year}_department_DEV";
+            FROM Public."QUERY_${year}_department${postfix}";
         END IF;
       END $$;
     `,
