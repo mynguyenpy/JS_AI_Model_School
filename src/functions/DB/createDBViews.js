@@ -334,7 +334,7 @@ async function createInitView(year, query_TableName) {
             "Distr_${year}".專業一 +
             "Distr_${year}".專業二
           )
-        , 0) AS "avg"
+        , 999) AS "avg"
       FROM Public."Distr_${year}"
       RIGHT JOIN Public."Data_${year}" ON 
         "Data_${year}".群別代號 LIKE "Distr_${year}".群別代號 AND

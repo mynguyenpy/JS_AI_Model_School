@@ -1104,7 +1104,11 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 	});
 	const rValues = nodes.map((d) => d[1]);
 	const avgValues = nodes.map((d) => {
-		return parseFloat(localizeDept(d[0], [avgKey])).toFixed(2);
+		
+		let result = parseFloat(localizeDept(d[0], [avgKey]));
+		if (result == 999) return "";
+
+		return result.toFixed(2);
 	});
 	const ranks =[
 		CalcRanks(rValues),
