@@ -266,7 +266,10 @@ async function createDataView_Department(year, query_TableName) {
 
   //- create view table
   await dbClient.query(create);
+}
 
+//- Prefix "QUERY_Init_" => 輕量整理後的初始資料
+async function createInitView(year, query_TableName) {
   //- Updates the min_AVG_Query
   const Create_min_AVG_Query = {
     name: `Create_min_AVG_Query-${year}_VIEW_Table`,
@@ -283,16 +286,37 @@ async function createDataView_Department(year, query_TableName) {
           RAISE NOTICE 'Table "min_AVG_Query_${year}" does exist. Cannot create table.';
         ELSE
           CREATE TABLE IF NOT EXISTS public."min_AVG_Query_${year}"  (
-            min_deptcodes character varying[],
+            schoolname character varying,
+            deptname character varying,
+            categories text[],
             min_avg real
           );
 
           INSERT INTO public."min_AVG_Query_${year}"
-            (min_deptcodes, min_avg)
+            (schoolname, deptname, categories, min_avg)
             SELECT
-              deptcodes,
-              "avg"
-            FROM Public."QUERY_${year}_department${postfix}";
+              "學校名稱" AS schoolname,
+              "系科組學程名稱" AS deptname,
+              ARRAY_Agg("群別代號") AS categories,
+              MIN(
+                COALESCE(
+                  "錄取總分數" /
+                  (
+                    "國文" +
+                    "英文" +
+                    "數學" +
+                    "專業一" +
+                    "專業二"
+                  ),
+                  999
+                )
+              ) AS "min_avg"
+            FROM public."Distr_${year}"
+            WHERE
+              "系科組學程名稱" IS NOT NULL
+            GROUP BY
+              "學校名稱",
+              "系科組學程名稱";
         END IF;
       END $$;
     `,
@@ -300,10 +324,6 @@ async function createDataView_Department(year, query_TableName) {
 
   //- insert "min_AVG_Query"
   await dbClient.query(Create_min_AVG_Query);
-}
-
-//- Prefix "QUERY_Init_" => 輕量整理後的初始資料
-async function createInitView(year, query_TableName) {
 
   const query = {
     text: `
@@ -379,31 +399,8 @@ async function createInitView(year, query_TableName) {
         "Data_${year}".學校名稱 = "Distr_${year}".學校名稱 AND
         "Distr_${year}".群別代號 = "Distr_${year}".群別代號 AND
         POSITION("Data_${year}".系科組學程名稱 IN "Distr_${year}".系科組學程名稱) > 0
-      FULL JOIN (
-        SELECT
-          "學校名稱" AS schoolname,
-          "系科組學程名稱" AS deptname,
-          ARRAY_Agg("群別代號") AS categories,
-          MIN(
-            COALESCE(
-              "錄取總分數" /
-              (
-                "國文" +
-                "英文" +
-                "數學" +
-                "專業一" +
-                "專業二"
-              ),
-              999
-            )
-          ) AS "min_avg"
-        FROM public."Distr_${year}"
-        WHERE
-          "系科組學程名稱" IS NOT NULL
-        GROUP BY
-          "學校名稱",
-          "系科組學程名稱"
-      ) AS SC2
+      FULL JOIN 
+        public."min_AVG_Query_${year}" SC2
       ON
         "Data_${year}"."學校名稱" = SC2.schoolname AND
         "Data_${year}"."系科組學程名稱" = SC2.deptname

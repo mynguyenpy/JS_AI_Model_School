@@ -177,12 +177,8 @@ export class dataBase_methods {
 				shiftratio,
 				admissionvalidity,
 				r_score,
-				LEAST("avg", min_avg) AS "avg"
+				"avg"
 			FROM public."QUERY_${year_Int}${postfix}"
-			JOIN
-				public."min_AVG_Query_${year_Int}" TG
-			ON
-				deptcode = ANY(TG.min_deptcodes)
     `;
 
 		try {
