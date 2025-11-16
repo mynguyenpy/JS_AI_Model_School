@@ -307,10 +307,10 @@ async function createInitView(year, query_TableName) {
 
   const query = {
     text: `
-      SELECT
+      SELECT DISTINCT
         (
           SUBSTRING(
-            cast ("校系代碼" as varChar),1,3
+          cast ("校系代碼" as varChar),1,3
           )
         ) AS schoolCode,
         "Data_${year}".學校名稱 AS schoolName,
@@ -324,19 +324,19 @@ async function createInitView(year, query_TableName) {
 
         (
           CASE
-          WHEN "一般生招生名額" = 0 THEN 
-            0
+          WHEN "一般生招生名額" = 0 THEN
+          0
           ELSE
-            (
-              cast ("一般生招生名額" AS DOUBLE PRECISION) -
+          (
+            cast ("一般生招生名額" AS DOUBLE PRECISION) -
               LEAST(
                 cast ("一般生招生名額" AS DOUBLE PRECISION),
-                GREATEST(
-                  cast ("一般生名額空缺" AS DOUBLE PRECISION),
-                  0
-                )
+              GREATEST(
+                cast ("一般生名額空缺" AS DOUBLE PRECISION),
+                0
               )
             )
+          )
           END
         ) AS AdmissionNumber,
         cast ("一般生招生名額" AS DOUBLE PRECISION) AS TotalAdmissionNumber,
@@ -345,18 +345,18 @@ async function createInitView(year, query_TableName) {
         GREATEST(
           cast ("一般生名額空缺" AS DOUBLE PRECISION),0
         ) AS AdmissionVacancies,
-         
+
         r_score AS r_score,
         (
           CASE
-          WHEN "一般生招生名額" = 0 THEN 
-            0
+          WHEN "一般生招生名額" = 0 THEN
+          0
           ELSE
-            GREATEST(
-              cast ("一般生名額空缺" AS DOUBLE PRECISION),
-              0
-            ) / 
-            cast ("一般生招生名額" AS DOUBLE PRECISION)
+          GREATEST(
+            cast ("一般生名額空缺" AS DOUBLE PRECISION),
+            0
+          ) /
+          cast ("一般生招生名額" AS DOUBLE PRECISION)
           END
         ) AS ShiftRatio,
         COALESCE(
@@ -368,14 +368,45 @@ async function createInitView(year, query_TableName) {
             "Distr_${year}".專業一 +
             "Distr_${year}".專業二
           ),
-          999 
+          SC2.min_avg,
+          999
         ) AS "avg"
-      FROM Public."Distr_${year}"
-      RIGHT JOIN Public."Data_${year}" ON 
-        "Data_${year}".群別代號 LIKE "Distr_${year}".群別代號 AND
-        "Data_${year}".學校名稱 LIKE "Distr_${year}".學校名稱 AND
-        POSITION("Data_${year}".系科組學程名稱 IN "Distr_${year}".系科組學程名稱) > 0 AND
-        "Distr_${year}".群別代號 LIKE "Distr_${year}".群別代號
+        FROM Public."Distr_${year}"
+      RIGHT JOIN
+        Public."Data_${year}"
+      ON
+        "Data_${year}".群別代號 = "Distr_${year}".群別代號 AND
+        "Data_${year}".學校名稱 = "Distr_${year}".學校名稱 AND
+        "Distr_${year}".群別代號 = "Distr_${year}".群別代號 AND
+        POSITION("Data_${year}".系科組學程名稱 IN "Distr_${year}".系科組學程名稱) > 0
+      FULL JOIN (
+        SELECT
+          "學校名稱" AS schoolname,
+          "系科組學程名稱" AS deptname,
+          ARRAY_Agg("群別代號") AS categories,
+          MIN(
+            COALESCE(
+              "錄取總分數" /
+              (
+                "國文" +
+                "英文" +
+                "數學" +
+                "專業一" +
+                "專業二"
+              ),
+              999
+            )
+          ) AS "min_avg"
+        FROM public."Distr_${year}"
+        WHERE
+          "系科組學程名稱" IS NOT NULL
+        GROUP BY
+          "學校名稱",
+          "系科組學程名稱"
+      ) AS SC2
+      ON
+        "Data_${year}"."學校名稱" = SC2.schoolname AND
+        "Data_${year}"."系科組學程名稱" = SC2.deptname
     `,
   };
   const create = {
