@@ -1106,7 +1106,7 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 	const avgValues = nodes.map((d) => {
 		
 		let result = parseFloat(localizeDept(d[0], [avgKey]));
-		if (result == 999) return "";
+		if (result === 999) return "";
 
 		return result.toFixed(2);
 	});
@@ -1155,7 +1155,10 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 					},
 					align: (ctx)=> ctx.datasetIndex === 0 ? "top" : "bottom",
 					anchor: "end",
-					formatter: function (value, ctx) {return `(${ranks[ctx.datasetIndex][ctx.dataIndex]}）\n${value}`;},
+					formatter: function (value, ctx) {
+						value = value === "" ? "查無資料" : value;
+						return `(${ranks[ctx.datasetIndex][ctx.dataIndex]}）\n${value}`;
+					},
 					font: (ctx) => { 
 						const rank = ranks[ctx.datasetIndex][ctx.dataIndex];
 						return { size: rank <= 3 ? 12 : 10, weight: rank <= 3 ? 'bold' : 'normal' };
