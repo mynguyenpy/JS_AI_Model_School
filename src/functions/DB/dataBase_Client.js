@@ -577,6 +577,8 @@ export class dataBase_methods {
 				GROUP BY
 					winner,
 					loser
+				ORDER BY
+					COUNT(isdraw) DESC
 			`,
 			rowMode: "array",
 		};
