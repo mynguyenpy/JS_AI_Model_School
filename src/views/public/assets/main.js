@@ -562,7 +562,7 @@ function updateSelectedSchool(schoolElement) {
 			.then((json) => {
 				//console.log(json);
 				const { nodes, edges } = json;
-				drawLineChart("chart-line-1", nodes, "錄取率", "admissionrate");
+				drawLineChart("chart-line-1", nodes, "報到率", "admissionrate");
 				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
 				drawLineChart(
 					"chart-line-3",
@@ -684,7 +684,7 @@ function updateSelectedDepartment(departmentElement) {
 
 				if(currentDisplayMode==="department"){nodes.map((x)=>{x[0]=x[0].split('-')})}
 
-				drawLineChart("chart-line-1", nodes, "錄取率", "admissionrate");
+				drawLineChart("chart-line-1", nodes, "報到率", "admissionrate");
 				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
 				drawLineChart(
 					"chart-line-3",
