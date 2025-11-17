@@ -403,7 +403,7 @@ async function createInitView(year, query_TableName) {
         public."min_AVG_Query_${year}" SC2
       ON
         "Data_${year}"."學校名稱" = SC2.schoolname AND
-        "Data_${year}"."系科組學程名稱" = SC2.deptname
+        POSITION("Data_${year}".系科組學程名稱 IN SC2.deptname) > 0
     `,
   };
   const create = {
