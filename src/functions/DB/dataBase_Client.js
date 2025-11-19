@@ -558,21 +558,17 @@ export class dataBase_methods {
 					//- Summarize Schools into average values
 					tg_query_Summary = `
 						SELECT 
-							schoolcode,
-							schoolname,
-							min("posvalid") AS "posvalid",
-							min("admissionvalidity") AS "admissionvalidity",
-							min("admissionrate") AS "admissionrate",
-							min("r_score") AS "r_score",
-							min("shiftratio") AS "shiftratio",
-							min("avg") AS "AVG"
-						FROM public."QUERY_${year_Int}${postfix}"
+							"schoolcode",
+							"schoolname",
+							"posvalid" AS "posvalid",
+							"admissionrate" AS "admissionrate",
+							"r_score" AS "r_score",
+							"shiftratio" AS "shiftratio",
+							"avg" AS "AVG"
+						FROM public."QUERY_${year_Int}_school${postfix}"
 						WHERE "schoolcode" in (
-							\'${res_nodes["nodes"].map((x) => x[0].slice(0, 3)).join("','")}\'
+							\'${res_nodes["nodes"].map(([node]) => node).join("','")}\'
 						)
-						GROUP BY
-							schoolcode,
-							schoolname
 					`;
 					break;
 				case "department":
@@ -604,7 +600,6 @@ export class dataBase_methods {
 							schoolcode,
 							schoolname,
 							"posvalid",
-							"admissionvalidity",
 							"admissionrate",
 							"r_score",
 							"shiftratio",
