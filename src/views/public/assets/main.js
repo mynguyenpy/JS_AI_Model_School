@@ -430,7 +430,6 @@ function initializeYearSelects() {
 async function initializeData() {
 	try {
 		universityData = await loadSchoolData(currentYear);
-		console.log(universityData);
 		if (Object.keys(universityData).length === 0) {
 			universityList.innerHTML =
 				'<li style="padding: 10px; color: #666;">無法載入資料，請確認CSV檔案已上傳</li>';
@@ -519,6 +518,59 @@ function initializeEventListeners() {
 	});
 }
 
+//- Send API request & Process AI analytic result
+function GetSchoolAnalyze(payload) {
+	// const { year, departmentCodes } = payload;
+
+	fetch('/api/getSchoolAnalyze',
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(payload),
+		}
+	)
+		.then(async (res) => {
+			let { chat } = await res.json();
+			AITextBox.innerHTML = showdownCt.makeHtml(chat);
+		})
+		.catch((e) => {
+			AITextBox.textContent = e.message;
+		});
+}
+//- Send API request & Process Charts
+function GetRelationData(payload) {
+	fetch(`api/${currentSumMode}`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(payload),
+	})
+		.then((res) => res.json())
+		.then((json) => {
+			//console.log(json);
+			const { nodes, edges } = json;
+			drawLineChart("chart-line-1", nodes, "報到率", "admissionrate");
+			drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
+			drawLineChart(
+				"chart-line-3",
+				nodes,
+				"甄選名額流去登分比例",
+				"shiftratio"
+			);
+			drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
+			renderNetwork(nodes, edges);
+			iLB();
+			return json;
+		})
+		.catch((err) => {
+			console.error(err);
+			return err;
+		});
+}
+
 // 更新選中學校顯示（學校模式）
 function updateSelectedSchool(schoolElement) {
 	const schoolCode = schoolElement.getAttribute("data-code");
@@ -551,34 +603,8 @@ function updateSelectedSchool(schoolElement) {
 	if (Cstatus) {
 		Compare(selectedUniversity);
 	} else {
-		fetch(`api/${currentSumMode}`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(selectedUniversity),
-		})
-			.then((res) => res.json())
-			.then((json) => {
-				//console.log(json);
-				const { nodes, edges } = json;
-				drawLineChart("chart-line-1", nodes, "報到率", "admissionrate");
-				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
-				drawLineChart(
-					"chart-line-3",
-					nodes,
-					"甄選名額流去登分比例",
-					"shiftratio"
-				);
-				drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
-				renderNetwork(nodes, edges);
-				iLB();
-				return json;
-			})
-			.catch((err) => {
-				console.error(err);
-				return err;
-			});
+		GetSchoolAnalyze(selectedUniversity); //- Get AI analyze
+		GetRelationData(selectedUniversity); 	//- Draw Charts
 	}
 
 	console.log("選中學校:", selectedUniversity);
@@ -651,56 +677,14 @@ function updateSelectedDepartment(departmentElement) {
 				.map(category => `[${category}${simplifyCategory(category)}]`)
 				.join(", ")}
         `;
-
-		//- Get AI analyze
-		fetch(`/api/getSchoolAnalyze?year=${currentYear}&schoolID=${deptCode}`)
-			.then(async (res) => {
-				let { chat } = await res.json();
-				// AITextBox.innerHTML = md.render(chat);
-				AITextBox.innerHTML = showdownCt.makeHtml(chat);
-			})
-			.catch((e) => {
-				AITextBox.textContent = `${e.message}`;
-			});
 	}
 	if (!CompareJson) CompareJson = departmentInfo;
-
+	
 	if (Cstatus) {
 		Compare(departmentInfo);
-	}
-	// 載入並繪製 network
-	else {
-		fetch(`api/${currentSumMode}`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(departmentInfo),
-		})
-			.then((res) => res.json())
-			.then((json) => {
-				//console.log(json);
-				const { nodes, edges } = json;
-
-				if(currentDisplayMode==="department"){nodes.map((x)=>{x[0]=x[0].split('-')})}
-
-				drawLineChart("chart-line-1", nodes, "報到率", "admissionrate");
-				drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
-				drawLineChart(
-					"chart-line-3",
-					nodes,
-					"甄選名額流去登分比例",
-					"shiftratio"
-				);
-				drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
-				renderNetwork(nodes, edges);
-				iLB();
-				return json;
-			})
-			.catch((err) => {
-				console.error(err);
-				return err;
-			});
+	} else {
+		GetSchoolAnalyze(departmentInfo); //- Get AI analyze
+		GetRelationData(departmentInfo); 	//- Draw Charts
 	}
 
 	selectedInfo.classList.remove("no-selection");
