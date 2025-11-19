@@ -358,7 +358,7 @@ export class dataBase_methods {
 		try {
 			switch (mode) {
 				case "school":
-					query_target = { from: `${universityCode}`, property: "校系代碼" };
+					query_target = { from: `${universityCode}`, property: "校系代碼", joinGroup: "校系代碼" };
 					query = {
 						text: `
 							SELECT
@@ -380,18 +380,20 @@ export class dataBase_methods {
 								ShiftRatio AS "甄選名額流去登分比例",
 								AdmissionRate AS "甄選一般生錄取率",
 								"r_score" AS "年度 R-Score"
-							FROM public."QUERY_111_school_DEV"
+							FROM public."QUERY_${year_Int}_school${postfix}"
+							WHERE schoolcode IN (\'${stringify}\')
+							ORDER BY "r_score" DESC
 						`,
 					};
 					break;
 
 				case "department":
-					query_target = { from: `${universityCode}-${departmentName}`, property: "ID" };
+					query_target = { from: `${universityCode}-${departmentName}`, property: "ID", joinGroup: "ID" };
 					query = {
 						text: `
 							SELECT
 								FORMAT('%s-%s', schoolcode, deptname) AS "ID",
-								schoolcode AS "校系代碼",
+								schoolcode AS "學校代碼",
 								schoolname AS "學校名稱",
 								deptname AS "系科組學程名稱",
 
@@ -419,7 +421,7 @@ export class dataBase_methods {
 					break;
 
 				default:
-					query_target = { from: departmentCodes[0], property : "校系代碼" };
+					query_target = { from: departmentCodes[0], property: "校系代碼", joinGroup: "校系代碼" };
 					query = {
 						text: `
 							SELECT 
@@ -451,12 +453,13 @@ export class dataBase_methods {
 					break;
 			}
 
-			const { from , property } = query_target;
+			const { from, property, joinGroup } = query_target;
 			const { rows } = await dbClient.query(query);
 
 			const target = rows.find((x) => from === x[property]);
+			
 			const data = rows.map((x) =>
-				({ [x["校系代碼"]]: x })
+				({ [x[joinGroup]]: x })
 			)[0];
 
 			const { message } = await QueryChat(year_Int, data, target, "");
