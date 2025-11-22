@@ -1121,6 +1121,8 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 	});
 
 	return [labels, values, CountData];
+
+	return [labels, values, CountData];
 }
 function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 	const labels = nodes.map((d) => { //- Formatting labels
@@ -1253,6 +1255,8 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 			},
 		},
 	});
+
+	return [labels, ranks, rValues, avgValues];
 
 	return [labels, ranks, rValues, avgValues];
 }
