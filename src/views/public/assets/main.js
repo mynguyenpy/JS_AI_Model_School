@@ -552,15 +552,15 @@ function GetRelationData(payload) {
 		.then((json) => {
 			// console.log(json);
 			const { nodes, edges } = json;
-			drawLineChart("chart-line-1", nodes, "報到率", "admissionrate");
-			drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
-			drawLineChart(
+			const [labels, admissionRates, admissionRateCounts] = drawLineChart("chart-line-1", nodes, "報到率", "admissionrate");
+			const [, ranks, rValues, avgValues] = drawDualAxisLineChart("chart-line-2", nodes, "r_score", "avg");
+			const [, shiftRatios, shiftRatioCounts] = drawLineChart(
 				"chart-line-3",
 				nodes,
 				"甄選名額流去登分比例",
 				"shiftratio"
 			);
-			drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
+			const [, posValids, posValidCounts] = drawLineChart("chart-line-4", nodes, "正取有效性", "posvalid");
 			renderNetwork(nodes, edges);
 			iLB();
 
@@ -1121,8 +1121,6 @@ function drawLineChart(containerId, nodes, chartName = "", dataKey = "") {
 	});
 
 	return [labels, values, CountData];
-
-	return [labels, values, CountData];
 }
 function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 	const labels = nodes.map((d) => { //- Formatting labels
@@ -1255,8 +1253,6 @@ function drawDualAxisLineChart(containerId, nodes, rKey = "", avgKey = "") {
 			},
 		},
 	});
-
-	return [labels, ranks, rValues, avgValues];
 
 	return [labels, ranks, rValues, avgValues];
 }
