@@ -18,7 +18,6 @@ import {
 	Ts_matching_Ratings_Array,
 	Ts_matching_Ratings_Query
 } from "../ts_validation.js";
-import { calcDrawMargin } from "ts-trueskill";
 
 //- Make sure DB is connected
 console.log("Connecting Database...");
