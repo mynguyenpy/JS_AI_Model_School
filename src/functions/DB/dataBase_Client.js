@@ -55,9 +55,10 @@ if (!dbClient) {
 	} catch (error) {
 		//- The error is "AggregateError"
 		console.log(`\x1b[41mCannot connect to Database !!\x1b[0m \n`);
-		error.errors.forEach((x) => {
-			console.error(`Database Error - \"\x1b[31m${x.message}\x1b[0m\"`);
-		});
+		console.error(error.message);
+		// error.errors.forEach((x) => {
+		// 	console.error(`Database Error - \"\x1b[31m${x.message}\x1b[0m\"`);
+		// });
 	}
 }
 
